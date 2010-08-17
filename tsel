@@ -1,0 +1,24 @@
+#!/usr/bin/perl
+
+$cfg = "$ENV{'HOME'}/.tsel_hist";
+
+if(@ARGV == 1){
+	# print mode
+	$line = $ARGV[0];
+
+	die "Invalid line" unless $line =~ /^\d+$/;
+	open CFG, '<', $cfg or die "$cfg: $!$/";
+
+	<CFG> while($line--);
+
+	$_ = scalar <CFG>;
+	die "No such line $ARGV[0]$/" unless defined;
+	print;
+}else{
+	open CFG, '>', $cfg;
+	while(<>){
+		print CFG $_;
+		print '[', $i++, '] ', $_;
+	}
+}
+close CFG;

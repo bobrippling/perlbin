@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+use warnings;
+
+use constant STAT_LIMIT => 5;
+my ($cmd, $changefile, $staterrors) = ('', '', 0);
+
+
+sub usage()
+{
+	print "Usage: $0 [exe_to_run] file_which_changes\n";
+	exit 1
+}
+
+sub getepoch($)
+{
+	my $mtime = (stat $_[0])[9];
+	if(defined($mtime)){
+		$staterrors = 0;
+		return $mtime;
+	}
+
+	die "Dying: $_[0]: $!\n" if(++$staterrors gt STAT_LIMIT);
+	return 1;
+}
+
+sub run
+{
+	my $date;
+	chomp($date = `date`);
+	print "----- $date -----\n";
+
+	$ret = system($cmd);
+	print "`$cmd` returned $ret" if $ret;
+}
+
+
+for $arg (@ARGV){
+	usage() if($arg eq '--help');
+
+	if($cmd eq ''){
+		$cmd = $arg;
+	}elsif($changefile eq ''){
+		$changefile = $arg;
+	}else{
+		usage();
+	}
+}
+
+usage() unless $changefile;
+
+$cmd = $changefile unless($cmd);
+
+#shellize $cmd;
+print STDERR "Running \"$cmd\" when \"$changefile\" changes\n";
+
+run();
+
+my $fileepoch = getepoch($changefile);
+for(;;){
+	my $newepoch = getepoch($changefile);
+
+	if($fileepoch ne $newepoch){
+		$fileepoch = $newepoch;
+		run();
+	}
+	sleep 1
+}

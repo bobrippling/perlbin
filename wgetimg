@@ -1,0 +1,107 @@
+#!/usr/bin/perl
+use warnings;
+
+my $regex_img     = '="([^"]*\.(jpe?g|png|gif))"';
+my $regex_href    = "<a href$regex_img";
+my $regex_imgsrc  = "<img src$regex_img";
+my $regex_both    = "<(a href|img src)$regex_img";
+
+our $regex         = $regex_href;
+our $dlcmd         = 'dlimage $$regex_subexpr while(s|$regex||i);';
+our $regex_subexpr = 1;
+
+
+sub usage()
+{
+	print <<EOD;
+Usage: $0 [OPTIONS] [--] file(s)...
+
+Where OPTIONS can be either:
+  -i: Download images matching <img src="...">
+  -a: Download images matching <a href="...">
+  -b: Both -a and -a
+
+-a is default
+
+Example usage:
+\$ wget -O - -q path/to/webpage | $0
+\$ $0 path/to/webpage
+\$ $0 -b http://website.com/webpage.html file.html
+EOD
+	exit 1;
+}
+
+sub basename($)
+{
+	return $_[0] if(index($_[0], '/') == -1);
+
+	$_[0] =~ m|.*/([^/]+)$|;
+	return $1 if defined $1;
+
+	return $_[0];
+}
+
+sub dlimage($)
+{
+	$file = basename($link = $_[0]);
+
+	if(-e $file){
+		print "have $file\n";
+		return;
+	}
+
+	print "get $file\n";
+	system("wget -q $link") == 0 or die "$0: `wget $link` failed";
+}
+
+sub linkmeupscotty
+{
+	if(defined($file = $_[0])){
+		if(-e $file){
+			open($fh,'<',$file) or die "$!\n";
+		}else{
+			open($fh, "wget -O - -q $file|") or die "$!\n";
+		}
+
+		eval $dlcmd while($_ = <$fh>);
+
+		close $fh;
+	}else{
+		# no args - stdin
+		eval $dlcmd while(<STDIN>);
+	}
+}
+
+$doneone = 0;
+$options = 1; # true while not found "--"
+
+for $arg(@ARGV){
+	if($arg eq '--help'){
+		usage;
+	}elsif($options){
+		if($arg eq '-i'){
+			$regex_subexpr = 1;
+			$regex = $regex_imgsrc;
+			continue;
+
+		}elsif($arg eq '-a'){
+			$regex_subexpr = 1;
+			$regex = $regex_href;
+			continue;
+
+		}elsif($arg eq '-b'){
+			$regex_subexpr = 2;
+			$regex = $regex_both;
+			continue;
+
+		}elsif($arg eq '--'){
+			$options = 0;
+			continue;
+		}
+	}
+
+	linkmeupscotty $arg;
+	$doneone = 1;
+}
+
+linkmeupscotty if(!$doneone);

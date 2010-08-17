@@ -1,0 +1,41 @@
+#!/usr/bin/perl -w
+use strict;
+
+my %htmlh = (
+	"%20"		 => " ",
+	"%21"		 => "!",
+	"%c2%a7"	=> "S",
+	"%d0%94"	=> "A",
+	"%c3%a9"	=> "e",
+	"%27"		 => "'",
+	"%28"		 => "(",
+	"%29"		 => ")",
+);
+
+# TODO: change to File::Copy
+
+if(@ARGV){
+	# move files
+	for(@ARGV){
+		for my $k(keys %htmlh){
+			if(m#$k#){
+				my $old = $_;
+				s/$k/$htmlh{$k}/g;
+				rename $old, $_ || die "$_: $!\n";
+			}
+		}
+	}
+}else{
+	my $mask = '';
+	vec($mask, fileno(STDIN), 1) = 1;
+
+	select($mask, undef, undef, 0.1) <= 0 and die "need args\n";
+
+	# got some stdin goodness
+	while(<STDIN>){
+		for my $k(keys %htmlh){
+			/$k/ && s/$k/$htmlh{$k}/g
+		}
+		print;
+	}
+}

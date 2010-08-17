@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+use strict;
+
+use Term::ANSIColor;
+# usage:
+# color("yellow"), color("bold red"), etc
+# color("reset")
+
+use constant HIGHLIGHT => "bold yellow";
+
+my($lineno,$regex) = (0,undef);
+my %filelist = ();
+
+for(@ARGV){
+  if($_ eq '-n'){
+    $lineno = 1;
+  }elsif(!-f){
+    die "Invalid arguments\n" if defined $regex;
+    $regex = $_;
+  }
+}
+die "Need regex\n" unless defined $regex;
+
+@ARGV = grep { -f } @ARGV;
+
+while(<>){
+  print $..": " if($lineno);
+  if(m/$regex/i){
+    print $`.color(HIGHLIGHT).$&.color("reset").$';
+  }else{
+    print $_;
+  }
+}

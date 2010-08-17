@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+
+sub usage
+{
+	print "Usage: $0 src-file(s) dest-dir\n";
+	print "Program to mkdir then $cmd\n";
+	exit 1;
+}
+
+sub quote($)
+{
+	return "\"$_[0]\"";
+}
+
+if($0 =~ /\/mkcp$/){
+	$iscopy = 1;
+}elsif($0 =~ /\/mkmv$/){
+	$iscopy = 0;
+}else{
+	die "Invalid program name $0!\n";
+}
+
+usage if(@ARGV < 2 or $ARGV[0] eq '--help');
+
+if($ARGV[0] eq '-d'){
+	shift;
+	$debug = 1;
+}
+
+$last  = $ARGV[$#ARGV];
+@files = map { quote$_ } @ARGV[0 .. $#ARGV-1];
+
+$cmd  = $iscopy ? 'cp' : 'mv';
+$args = $iscopy ? '-R' : '';
+
+if($debug){
+	print "mkdir $last\n$cmd $args @files $last\n";
+}else{
+	if(!-d $last){
+		mkdir $last or die "mkdir: $!$/";
+	}
+	system("$cmd $args @files ".quote$last) and die "system(): $!$/";
+}
