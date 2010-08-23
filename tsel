@@ -1,12 +1,23 @@
 #!/usr/bin/perl
 
+sub usage
+{
+	print <<EOD;
+Usage: $0 [line number]
+
+If line number is specified, print said line number to stdout
+else, read input, and display with line numbers
+EOD
+	exit 1;
+}
+
 $cfg = "$ENV{'HOME'}/.tsel_hist";
 
 if(@ARGV == 1){
 	# print mode
 	$line = $ARGV[0];
 
-	die "Invalid line" unless $line =~ /^\d+$/;
+	usage() unless $line =~ /^\d+$/;
 	open CFG, '<', $cfg or die "$cfg: $!$/";
 
 	<CFG> while($line--);
