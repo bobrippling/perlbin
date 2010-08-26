@@ -1,0 +1,53 @@
+#!/usr/bin/perl
+
+use warnings;
+
+sub usage
+{
+	print <<"!";
+Usage: $0 [-a] [-r] [FILES...]
+  -a: List all files
+  -r: Raw/no column mode
+!
+	exit 1
+}
+
+sub get($$)
+{
+	my $_;
+	$_ = `$_[0] $_[1]` or die "$_[0]: $!\n";
+	chomp;
+	return $_;
+}
+
+my $all = 0;
+$col = 1;
+
+for(@ARGV){
+	if($_ eq '-a'){
+		$all = 1;
+	}elsif($_ eq '-r'){
+		$col = 0;
+	}else{
+		push @files, $_;
+	}
+}
+
+@files = grep { !-d $_ && ($all || ! /^\./) } glob '* .*' unless @files;
+
+
+@ls = map {
+	($fileout = get('file', $_)) =~ s/^[^:]+: *//;
+	{
+		'file' => $fileout,
+		'path' => get('ls -l', $_)
+	} } @files;
+
+
+if($col){
+	open OUT, '| column -t' or die "pipe column: $!\n";
+}else{
+	open OUT, '>&STDOUT';
+}
+
+print OUT ${$_}{'path'}, " -> ", ${$_}{'file'}, "\n" for @ls;
