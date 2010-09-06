@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use warnings;
+
 sub usage
 {
 	print "Usage: $0 src-file(s) dest-dir\n";
@@ -12,12 +14,21 @@ sub quote($)
 	return "\"$_[0]\"";
 }
 
-if($0 =~ /\/mkcp$/){
+sub basename($)
+{
+	my $_ = $_[0];
+	return $1 if m|.*/([^/]+$)|;
+	return $_;
+}
+
+$progname = basename($0);
+
+if($progname eq 'mkcp'){
 	$iscopy = 1;
-}elsif($0 =~ /\/mkmv$/){
+}elsif($progname eq 'mkmv'){
 	$iscopy = 0;
 }else{
-	die "Invalid program name $0!\n";
+	die "Invalid program name \"$progname\", expected \"mkcp\" or \"mkmv\"\n";
 }
 
 usage if(@ARGV < 2 or $ARGV[0] eq '--help');
