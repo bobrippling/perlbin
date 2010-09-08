@@ -2,13 +2,17 @@
 use warnings;
 
 my $regex_img     = '="([^"]*\.(jpe?g|png|gif))"';
-my $regex_href    = "<a href$regex_img";
-my $regex_imgsrc  = "<img src$regex_img";
-my $regex_both    = "<(a href|img src)$regex_img";
+my $regex_href    = "<a [^>]*href$regex_img";
+my $regex_imgsrc  = "<img [^>]*src$regex_img";
+my $regex_both    = "<(a [^>]*href|img [^>]*src)$regex_img";
 
 our $regex         = $regex_href;
 our $dlcmd         = 'dlimage $$regex_subexpr while(s|$regex||i);';
 our $regex_subexpr = 1;
+
+our $currentpage = undef;
+
+our $wget_verbose = 0;
 
 
 sub usage()
@@ -20,25 +24,24 @@ Where OPTIONS can be either:
   -i: Download images matching <img src="...">
   -a: Download images matching <a href="...">
   -b: Both -a and -a
+  -v: show stats at the end
+  -w: show wget output
 
 -a is default
 
 Example usage:
-\$ wget -O - -q path/to/webpage | $0
-\$ $0 path/to/webpage
-\$ $0 -b http://website.com/webpage.html file.html
+\$ wget -qO - http://www.path.com/to/webpage.html | $0
+\$ $0 -a path/to/local_webpage.html -i path/to/another.html
+\$ $0 -b http://website.com/webpage.html local_file.html
 EOD
 	exit 1;
 }
 
 sub basename($)
 {
-	return $_[0] if(index($_[0], '/') == -1);
-
-	$_[0] =~ m|.*/([^/]+)$|;
-	return $1 if defined $1;
-
-	return $_[0];
+	my $_ = $_[0];
+	return $1 if m|.*/([^/]+)$|;
+	return $_;
 }
 
 sub dlimage($)
@@ -46,21 +49,41 @@ sub dlimage($)
 	$file = basename($link = $_[0]);
 
 	if(-e $file){
-		print "have $file\n";
+		print "have $link\n" unless $verbose;
+		$processed{$file} = 'already have';
 		return;
 	}
 
-	print "get $file\n";
-	system("wget -q $link") == 0 or die "$0: `wget $link` failed";
+	if($link =~ m|^/|){
+		# append link name
+		if($currentpage){
+			($copy = $currentpage) =~ s#(\.(co(m|\.uk)|org))/.*#$1#;
+
+			$link = $copy . $link;
+
+			print "warning: appending links -> $link\n";
+		}else{
+			print "can't wget non-absolute link: $link\n";
+			return;
+		}
+	}
+
+	system("wget " . ($wget_verbose ? '' : '-q') . " $link") == 0 or die "$0: `wget $link` failed";
+
+	print "wgot $link\n" unless $verbose;
+	$processed{$file} = 'downloaded';
 }
 
 sub linkmeupscotty
 {
-	if(defined($file = $_[0])){
+	if(defined($file = $_[0]) && !($file eq '-')){
 		if(-e $file){
-			open($fh,'<',$file) or die "$!\n";
+			open($fh,'<', $file) or die "$!\n";
+			$processed{$file} = 'read & processed';
 		}else{
-			open($fh, "wget -O - -q $file|") or die "$!\n";
+			open($fh, "wget -qO - $file |") or die "$!\n";
+			$currentpage = $file;
+			$processed{$file} = 'wgot & processed';
 		}
 
 		eval $dlcmd while($_ = <$fh>);
@@ -69,39 +92,56 @@ sub linkmeupscotty
 	}else{
 		# no args - stdin
 		eval $dlcmd while(<STDIN>);
+		$processed{'-'} = 'processed';
 	}
 }
 
+sub stats
+{
+	print "--- Done, Stats ---\n";
+	print "$_: $processed{$_}\n" for keys %processed;
+}
+
+our %processed;
+$verbose = 0;
 $doneone = 0;
 $options = 1; # true while not found "--"
 
 for $arg(@ARGV){
 	if($arg eq '--help'){
 		usage;
-	}elsif($options){
-		if($arg eq '-i'){
-			$regex_subexpr = 1;
-			$regex = $regex_imgsrc;
-			continue;
 
-		}elsif($arg eq '-a'){
-			$regex_subexpr = 1;
-			$regex = $regex_href;
-			continue;
+	}elsif($arg eq '-v'){
+		$verbose = 1;
+		next;
 
-		}elsif($arg eq '-b'){
-			$regex_subexpr = 2;
-			$regex = $regex_both;
-			continue;
+	}elsif($arg eq '-i'){
+		$regex_subexpr = 1;
+		$regex = $regex_imgsrc;
+		next;
 
-		}elsif($arg eq '--'){
-			$options = 0;
-			continue;
-		}
+	}elsif($arg eq '-a'){
+		$regex_subexpr = 1;
+		$regex = $regex_href;
+		next;
+
+	}elsif($arg eq '-b'){
+		$regex_subexpr = 2;
+		$regex = $regex_both;
+		next;
+
+	}elsif($arg eq '-w'){
+		$wget_verbose = 1;
+		next;
+
+	}elsif($arg eq '--'){
+		$options = 0;
+		next;
 	}
 
 	linkmeupscotty $arg;
 	$doneone = 1;
 }
 
-linkmeupscotty if(!$doneone);
+linkmeupscotty unless $doneone;
+stats if $verbose;
