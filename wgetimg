@@ -10,9 +10,11 @@ our $regex         = $regex_href;
 our $dlcmd         = 'dlimage $$regex_subexpr while(s|$regex||i);';
 our $regex_subexpr = 1;
 
+our %printed;
+
 our $currentpage = undef;
 
-our $wget_verbose = 0;
+our $wget_verbose  = 0;
 
 
 sub usage()
@@ -49,8 +51,8 @@ sub dlimage($)
 	$file = basename($link = $_[0]);
 
 	if(-e $file){
-		print "have $link\n" unless $verbose;
-		$processed{$file} = 'already have';
+		print "have $link\n" unless $printed{$file};
+		$printed{$file} = 1;
 		return;
 	}
 
@@ -71,7 +73,6 @@ sub dlimage($)
 	system("wget " . ($wget_verbose ? '' : '-q') . " $link") == 0 or die "$0: `wget $link` failed";
 
 	print "wgot $link\n" unless $verbose;
-	$processed{$file} = 'downloaded';
 }
 
 sub linkmeupscotty
@@ -79,11 +80,9 @@ sub linkmeupscotty
 	if(defined($file = $_[0]) && !($file eq '-')){
 		if(-e $file){
 			open($fh,'<', $file) or die "$!\n";
-			$processed{$file} = 'read & processed';
 		}else{
 			open($fh, "wget -qO - $file |") or die "$!\n";
 			$currentpage = $file;
-			$processed{$file} = 'wgot & processed';
 		}
 
 		eval $dlcmd while($_ = <$fh>);
@@ -92,17 +91,9 @@ sub linkmeupscotty
 	}else{
 		# no args - stdin
 		eval $dlcmd while(<STDIN>);
-		$processed{'-'} = 'processed';
 	}
 }
 
-sub stats
-{
-	print "--- Done, Stats ---\n";
-	print "$_: $processed{$_}\n" for keys %processed;
-}
-
-our %processed;
 $verbose = 0;
 $doneone = 0;
 $options = 1; # true while not found "--"
@@ -144,4 +135,3 @@ for $arg(@ARGV){
 }
 
 linkmeupscotty unless $doneone;
-stats if $verbose;
