@@ -10,12 +10,11 @@ our $regex         = $regex_href;
 our $dlcmd         = 'dlimage $$regex_subexpr while(s|$regex||i);';
 our $regex_subexpr = 1;
 
-our %printed;
-
 our $currentpage = undef;
 
 our $wget_verbose  = 0;
 
+# TODO: threads/async wgets
 
 sub usage()
 {
@@ -26,8 +25,7 @@ Where OPTIONS can be either:
   -i: Download images matching <img src="...">
   -a: Download images matching <a href="...">
   -b: Both -a and -a
-  -v: show stats at the end
-  -w: show wget output
+  -v: show wget output
 
 -a is default
 
@@ -51,28 +49,37 @@ sub dlimage($)
 	$file = basename($link = $_[0]);
 
 	if(-e $file){
-		print "have $link\n" unless $printed{$file};
-		$printed{$file} = 1;
+		print "have $link\n";
 		return;
 	}
 
-	if($link =~ m|^/|){
+	if($link =~ m|^/| || $link =~ m|^[^/]+$|){
 		# append link name
 		if($currentpage){
-			($copy = $currentpage) =~ s#(\.(co(m|\.uk)|org))/.*#$1#;
+			if(substr($link, 0, 1) eq '/'){
+				# non-relative
+				($copy = $currentpage) =~ s#(\.(co(m|\.uk)|org))/.*#$1#;
+				$link = $copy . $link;
+			}else{
+				# relative - delete backwards until / is found
+				($copy = $currentpage) =~ s#/[^/]+$##;
+				$link = $copy . '/' . $link;
+			}
 
-			$link = $copy . $link;
-
-			print "warning: appending links -> $link\n";
+			print STDERR "warning: appending links -> $link\n";
 		}else{
-			print "can't wget non-absolute link: $link\n";
+			print "can't wget non-absolute link (no page ref): $link\n";
 			return;
 		}
 	}
 
-	system("wget " . ($wget_verbose ? '' : '-q') . " $link") == 0 or die "$0: `wget $link` failed";
+	$ret = system("wget " . ($wget_verbose ? '' : '-q') . " $link");
+	if($ret != 0){
+		print "$0: wget $link failed\n";
+		exit 1;
+	}
 
-	print "wgot $link\n" unless $verbose;
+	print "wgot $link\n";
 }
 
 sub linkmeupscotty
@@ -80,6 +87,7 @@ sub linkmeupscotty
 	if(defined($file = $_[0]) && !($file eq '-')){
 		if(-e $file){
 			open($fh,'<', $file) or die "$!\n";
+			$currentpage = '';
 		}else{
 			open($fh, "wget -qO - $file |") or die "$!\n";
 			$currentpage = $file;
@@ -94,7 +102,7 @@ sub linkmeupscotty
 	}
 }
 
-$verbose = 0;
+# local options
 $doneone = 0;
 $options = 1; # true while not found "--"
 
@@ -103,7 +111,7 @@ for $arg(@ARGV){
 		usage;
 
 	}elsif($arg eq '-v'){
-		$verbose = 1;
+		$wget_verbose = 1;
 		next;
 
 	}elsif($arg eq '-i'){
@@ -121,16 +129,14 @@ for $arg(@ARGV){
 		$regex = $regex_both;
 		next;
 
-	}elsif($arg eq '-w'){
-		$wget_verbose = 1;
-		next;
-
 	}elsif($arg eq '--'){
 		$options = 0;
 		next;
 	}
 
 	linkmeupscotty $arg;
+	# stay in the loop:
+	# options are relative to args
 	$doneone = 1;
 }
 
