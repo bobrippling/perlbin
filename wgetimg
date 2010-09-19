@@ -10,11 +10,13 @@ our $regex         = $regex_href;
 our $dlcmd         = 'dlimage $$regex_subexpr while(s|$regex||i);';
 our $regex_subexpr = 1;
 
-our $currentpage = undef;
-
+our $currentpage   = undef;
 our $wget_verbose  = 0;
 
-# TODO: threads/async wgets
+our %downloads; # Map<PID, Link>
+our %downloads_rev; # reverse of above, for lookup
+
+our $threaded = 1;
 
 sub usage()
 {
@@ -25,7 +27,8 @@ Where OPTIONS can be either:
   -i: Download images matching <img src="...">
   -a: Download images matching <a href="...">
   -b: Both -a and -a
-  -v: show wget output
+  -v: Show wget output
+  -T: Single 'threaded' (wait for each wget)
 
 -a is default
 
@@ -44,12 +47,30 @@ sub basename($)
 	return $_;
 }
 
+sub adddownload($)
+{
+	$link = $_[0];
+	
+	die "fork" unless defined($pid = fork());
+
+	if($pid == 0){
+		# child
+		exec "wget " . ($wget_verbose ? '' : '-q') . " $link";
+	}
+
+	$downloads{$pid} = $link;
+	$downloads_rev{$link} = $pid;
+}
+
 sub dlimage($)
 {
 	$file = basename($link = $_[0]);
 
 	if(-e $file){
 		print "have $link\n";
+		return;
+	}elsif(exists $downloads_rev{$link}){
+		print "inprogress $link\n";
 		return;
 	}
 
@@ -73,13 +94,23 @@ sub dlimage($)
 		}
 	}
 
-	$ret = system("wget " . ($wget_verbose ? '' : '-q') . " $link");
-	if($ret != 0){
-		print "$0: wget $link failed\n";
-		exit 1;
-	}
+	# point of no return
 
-	print "wgot $link\n";
+	if($threaded){
+		print "threaded, adddownload: $link\n" if $wget_verbose;
+		adddownload $link;
+	}else{
+		$ret = system("wget " . ($wget_verbose ? '' : '-q') . " $link");
+		if($ret != 0){
+			if($ret == -1){
+				print "couldn't start wget: $!\n";
+			}else{
+				print "$0: wget $link failed ($ret)\n";
+			}
+			exit 1;
+		}
+		print "wgot $link\n";
+	}
 }
 
 sub linkmeupscotty
@@ -106,6 +137,9 @@ sub linkmeupscotty
 $doneone = 0;
 $options = 1; # true while not found "--"
 
+#$SIG{'CHLD'} = 'IGNORE' if $threaded;
+# else this cocks up system()
+
 for $arg(@ARGV){
 	if($arg eq '--help'){
 		usage;
@@ -129,6 +163,10 @@ for $arg(@ARGV){
 		$regex = $regex_both;
 		next;
 
+	}elsif($arg eq '-T'){
+		$threaded = 0;
+		next;
+
 	}elsif($arg eq '--'){
 		$options = 0;
 		next;
@@ -141,3 +179,28 @@ for $arg(@ARGV){
 }
 
 linkmeupscotty unless $doneone;
+
+if($threaded){
+	# collect downloads
+	my %errs;
+
+	while(keys %downloads){
+		# status in $?
+		$pid = wait();
+		if($pid == -1){
+			# should never get here
+			print "wait() returned -1, still have children...?:\n";
+			print "pid: $_, link: $downloads{$_}\n" for keys %downloads;
+			exit 1;
+		}
+
+		print "wget = $? for " . $downloads{$pid} . "\n";
+		$errs{$downloads{$pid}} = $? if $?;
+
+		delete $downloads{$pid};
+	}
+
+	if(keys %errs){
+		print STDERR "error $errs{$_} for $_\n" for keys %errs;
+	}
+}
