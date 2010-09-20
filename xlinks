@@ -5,5 +5,5 @@ die "Usage: $0 [--help] [FILE]\n" if $ARGV[0] eq '--help';
 $\ = "\n";
 
 while(<>){
-	print $3 while(s/<(img|a) [^>]*(href|src)="([^"]+)"[^>]*>//i);
+	print $3 while(s/<(img|a) [^>]*(href|src)=["']([^"]+)["'][^>]*>//i);
 }

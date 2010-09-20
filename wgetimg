@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 use warnings;
 
-my $regex_img     = '="([^"]*\.(jpe?g|png|gif))"';
+my $regex_quote   = "[\"']";
+my $regex_img     = '=' . $regex_quote . '([^"]*\.(jpe?g|png|gif))' . $regex_quote;
 my $regex_href    = "<a [^>]*href$regex_img";
 my $regex_imgsrc  = "<img [^>]*src$regex_img";
 my $regex_both    = "<(a [^>]*href|img [^>]*src)$regex_img";
@@ -50,12 +51,12 @@ sub basename($)
 sub adddownload($)
 {
 	$link = $_[0];
-	
+
 	die "fork" unless defined($pid = fork());
 
 	if($pid == 0){
 		# child
-		exec "wget " . ($wget_verbose ? '' : '-q') . " $link";
+		exec "wget " . ($wget_verbose ? '' : '-q') . " '$link'";
 	}
 
 	$downloads{$pid} = $link;
@@ -79,7 +80,7 @@ sub dlimage($)
 		if($currentpage){
 			if(substr($link, 0, 1) eq '/'){
 				# non-relative
-				($copy = $currentpage) =~ s#(\.(co(m|\.uk)|org))/.*#$1#;
+				($copy = $currentpage) =~ s#(http://[^/]+).*#$1#;
 				$link = $copy . $link;
 			}else{
 				# relative - delete backwards until / is found
@@ -100,7 +101,7 @@ sub dlimage($)
 		print "threaded, adddownload: $link\n" if $wget_verbose;
 		adddownload $link;
 	}else{
-		$ret = system("wget " . ($wget_verbose ? '' : '-q') . " $link");
+		$ret = system("wget " . ($wget_verbose ? '' : '-q') . " '$link'");
 		if($ret != 0){
 			if($ret == -1){
 				print "couldn't start wget: $!\n";
@@ -141,36 +142,38 @@ $options = 1; # true while not found "--"
 # else this cocks up system()
 
 for $arg(@ARGV){
-	if($arg eq '--help'){
+	if($options && $arg eq '--help'){
 		usage;
 
-	}elsif($arg eq '-v'){
+	}elsif($options && $arg eq '-v'){
 		$wget_verbose = 1;
 		next;
 
-	}elsif($arg eq '-i'){
+	}elsif($options && $arg eq '-i'){
 		$regex_subexpr = 1;
 		$regex = $regex_imgsrc;
 		next;
 
-	}elsif($arg eq '-a'){
+	}elsif($options && $arg eq '-a'){
 		$regex_subexpr = 1;
 		$regex = $regex_href;
 		next;
 
-	}elsif($arg eq '-b'){
+	}elsif($options && $arg eq '-b'){
 		$regex_subexpr = 2;
 		$regex = $regex_both;
 		next;
 
-	}elsif($arg eq '-T'){
+	}elsif($options && $arg eq '-T'){
 		$threaded = 0;
 		next;
 
-	}elsif($arg eq '--'){
+	}elsif($options && $arg eq '--'){
 		$options = 0;
 		next;
+
 	}
+
 
 	linkmeupscotty $arg;
 	# stay in the loop:
