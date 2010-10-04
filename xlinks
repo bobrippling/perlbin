@@ -1,9 +1,29 @@
 #!/usr/bin/perl
 
-die "Usage: $0 [--help] [FILE]\n" if $ARGV[0] eq '--help';
+sub scan($)
+{
+	local $_ = $_[0];
+	print $4 while(s/<(img|a) [^>]*(href|src)=(["'])([^"']+)\3[^>]*>//i);
+}
+
+die "Usage: $0 [--help] [FILES...]\n" if $ARGV[0] eq '--help';
 
 $\ = "\n";
+$doneone = 0;
 
-while(<>){
-	print $3 while(s/<(img|a) [^>]*(href|src)=["']([^"]+)["'][^>]*>//i);
+for $arg (@ARGV){
+	if(-f $arg){
+		$f = "< $arg";
+	}else{
+		$f = "wget -qO- $arg |";
+	}
+
+	open F, $f or die "open $f\n";
+	scan $_ for <F>;
+	close F;
+	$doneone = 1;
+}
+
+if(!$doneone){
+	scan $_ while(<STDIN>);
 }
