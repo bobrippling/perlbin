@@ -15,6 +15,13 @@ my %htmlh = (
 # TODO: change to File::Copy
 
 if(@ARGV){
+
+	if($ARGV[0] eq '--help'){
+		print "Usage: $0 [files_to_rename]\n";
+		print "  If no files are given, stdin is read\n";
+		exit 1;
+	}
+
 	# move files
 	for(@ARGV){
 		for my $k(keys %htmlh){
