@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+use warnings;
+
+our %downloads; # Map<PID, Link>
+our %downloads_rev; # reverse of above, for lookup
+my  $doneone = 0;
+
+sub adddownload($)
+{ $link = $_[0];
+
+	die "fork" unless defined($pid = fork());
+
+	exec "wget -q '$link'" if $pid == 0;
+
+	$downloads{$pid} = $link;
+	$downloads_rev{$link} = $pid;
+}
+
+
+for(@ARGV){
+	if($_ eq '--help'){
+		print "Usage: $0 [links...]\n";
+		print "If no links are given, they are read on stdin\n";
+		exit 1;
+	}
+
+	adddownload $_;
+	$doneone = 1;
+}
+
+if(!$doneone){
+	while(<STDIN>){
+		chomp;
+		adddownload $_;
+	}
+}
+
+# collect downloads
+while(keys %downloads){
+	# status in $?
+	$pid = wait();
+	if($pid == -1){
+		# should never get here
+		print "wait() returned -1, still have children...?:\n";
+		print "pid: $_, link: $downloads{$_}\n" for keys %downloads;
+		exit 1;
+	}
+
+	print "wget = $? for " . $downloads{$pid} . "\n";
+	$errs{$downloads{$pid}} = $? if $?;
+
+	delete $downloads{$pid};
+}
+
+if(keys %errs){
+	print STDERR "error $errs{$_} for $_\n" for keys %errs;
+}
