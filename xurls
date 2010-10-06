@@ -1,0 +1,38 @@
+#!/usr/bin/perl
+
+$hostchars = '[a-zA-Z0-9._+-]';
+$pathchars = '[a-zA-Z0-9._+#=?&:()%-]';
+
+$B = "\e[0;31m";
+$A = "\e[0m";
+
+sub scan($)
+{
+	local $_ = $_[0];
+	eval $cmd while(s#(http|file|ftp|uri)://$hostchars+/($pathchars+/?)*##);
+}
+
+die "Usage: $0 [--help] [FILES...]\n" if $ARGV[0] eq '--help';
+
+$doneone = 0;
+$cmd = 'print $&, "\n"';
+
+for $arg (@ARGV){
+	if($arg eq '-n'){
+		$cmd = 'print "$`$B$&$A$\'"';
+		next;
+	}elsif(-f $arg){
+		$f = "< $arg";
+	}else{
+		$f = "wget -qO- $arg |";
+	}
+
+	open F, $f or die "open $f\n";
+	scan $_ for <F>;
+	close F;
+	$doneone = 1;
+}
+
+if(!$doneone){
+	scan $_ while(<STDIN>);
+}
