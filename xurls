@@ -39,13 +39,12 @@ for $arg (@ARGV){
 	if($arg eq '-n'){
 		$cmd = 'print "$`$B$&$A$\'"';
 		next;
-	}elsif(-f $arg){
-		$f = "< $arg";
-	}else{
-		$f = "wget -qO- $arg |";
+	}elsif($arg eq '-C'){
+		$A = $B = '';
+		next;
 	}
 
-	open F, $f or die "open $f\n";
+	open F, '<', $arg or die "$arg: $!\n";
 	scan $_ for <F>;
 	close F;
 	$doneone = 1;
