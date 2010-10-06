@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-$hostchars = '[a-zA-Z0-9._+-]';
-$pathchars = '[a-zA-Z0-9._+#=?&:()%-]';
+$hostchars = '[a-z0-9._+-]';
+$pathchars = '[a-z0-9._+#=?&:;%/-]';
 
 $B = "\e[0;31m";
 $A = "\e[0m";
@@ -9,7 +9,25 @@ $A = "\e[0m";
 sub scan($)
 {
 	local $_ = $_[0];
-	eval $cmd while(s#(http|file|ftp|uri)://$hostchars+/($pathchars+/?)*##);
+	eval $cmd while(
+		s!
+      ((http|file|ftp|uri)://)?
+
+# http://
+
+      $hostchars+\.[a-z]+/
+
+# www.tim.google.com/ - the [a-z].com is the main anchor for the whole regex - incase http:// is omitted
+
+      ($pathchars+/\?)*
+
+# check for the index.php? part
+
+      ($pathchars+|\($pathchars+\))*
+
+# check for pathchars, or a set of nested parens
+
+      !!xoi); # allow space + comments, compile once, strcasecmp
 }
 
 die "Usage: $0 [--help] [FILES...]\n" if $ARGV[0] eq '--help';
