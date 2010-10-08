@@ -11,23 +11,25 @@ use constant HIGHLIGHT => "bold yellow";
 my($lineno,$regex) = (0,undef);
 my %filelist = ();
 
+warn "output isn't a terminal\n" if !-t STDOUT;
+
 for(@ARGV){
-  if($_ eq '-n'){
-    $lineno = 1;
-  }elsif(!-f){
-    die "Invalid arguments\n" if defined $regex;
-    $regex = $_;
-  }
+	if($_ eq '-n'){
+		$lineno = 1;
+		shift @ARGV;
+	}else{
+		$regex = $_;
+		shift @ARGV;
+		last;
+	}
 }
 die "Need regex\n" unless defined $regex;
 
-@ARGV = grep { -f } @ARGV;
-
 while(<>){
-  print $..": " if($lineno);
-  if(m/$regex/i){
-    print $`.color(HIGHLIGHT).$&.color("reset").$';
-  }else{
-    print $_;
-  }
+	print $..": " if($lineno);
+	if(m/$regex/io){
+		print $`.color(HIGHLIGHT).$&.color("reset").$';
+	}else{
+		print $_;
+	}
 }
