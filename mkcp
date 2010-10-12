@@ -21,6 +21,19 @@ sub basename($)
 	return $_;
 }
 
+sub mkdir_p($)
+{
+	$d = '';
+	@d = map { $d = "$d/$_" } grep { length } split m|/|, $_[0];
+
+	for(@d){
+		if(!-d $_){
+			mkdir $_ or die "mkdir $_: $!\n";
+		}
+	}
+	return 1;
+}
+
 $progname = basename($0);
 
 if($progname eq 'mkcp'){
@@ -47,8 +60,6 @@ $args = $iscopy ? '-R' : '';
 if($debug){
 	print "mkdir $last\n$cmd $args @files $last\n";
 }else{
-	if(!-d $last){
-		mkdir $last or die "mkdir: $!$/";
-	}
-	system("$cmd $args @files ".quote$last) and die "system(): $!$/";
+	mkdir_p($last);
+	exec("$cmd $args @files ".quote$last) or die "exec(): $!$/";
 }

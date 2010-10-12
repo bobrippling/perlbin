@@ -206,4 +206,5 @@ if($threaded){
 	if(keys %errs){
 		print STDERR "error $errs{$_} for $_\n" for keys %errs;
 	}
+	exit !!keys %errs;
 }
