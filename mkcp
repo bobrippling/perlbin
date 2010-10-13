@@ -11,7 +11,7 @@ sub usage
 
 sub quote($)
 {
-	return "\"$_[0]\"";
+	return "'$_[0]'";
 }
 
 sub basename($)
@@ -24,11 +24,19 @@ sub basename($)
 sub mkdir_p($)
 {
 	$d = '';
-	@d = map { $d = "$d/$_" } grep { length } split m|/|, $_[0];
+	@d = map { $d = "$d/$_" } grep { length } split m|/|o, $_[0];
+
+	if($_[0] !~ m|^/|){
+		s|^/||o for @d;
+	}
 
 	for(@d){
 		if(!-d $_){
-			mkdir $_ or die "mkdir $_: $!\n";
+			if($debug){
+				print "mkdir '$_'\n";
+			}else{
+				mkdir $_ or die "mkdir $_: $!\n";
+			}
 		}
 	}
 	return 1;
@@ -52,14 +60,14 @@ if($ARGV[0] eq '-d'){
 }
 
 $last  = $ARGV[$#ARGV];
-@files = map { quote$_ } @ARGV[0 .. $#ARGV-1];
+@files = map { quote($_) } @ARGV[0 .. $#ARGV-1];
 
 $cmd  = $iscopy ? 'cp' : 'mv';
 $args = $iscopy ? '-R' : '';
 
+mkdir_p($last);
 if($debug){
-	print "mkdir $last\n$cmd $args @files $last\n";
+	print "$cmd $args @files " . quote($last) . "\n";
 }else{
-	mkdir_p($last);
-	exec("$cmd $args @files ".quote$last) or die "exec(): $!$/";
+	exec( "$cmd $args @files " . quote($last)) or die "exec(): $!$/";
 }
