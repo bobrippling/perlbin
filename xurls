@@ -1,16 +1,15 @@
 #!/usr/bin/perl
 
+use warnings;
+
 $hostchars = '[a-z0-9._+-]';
 $pathchars = '[a-z0-9._+#=?&:;%/!,-]';
 
-$B = "\e[0;31m";
-$A = "\e[0m";
-
-sub scan($)
+sub scan($$$)
 {
-	local $_ = $_[0];
-	eval $cmd while(
-		s!
+	my ($file, $lineno, $line) = @_;
+
+	while($line =~ s!
       ([a-z]+://)?
 
 # http://
@@ -27,29 +26,79 @@ sub scan($)
 
 # check for pathchars, or a set of nested parens
 
-      !!xoi); # allow space + comments, compile once, strcasecmp
+      !!xoi){ # allow space + comments, compile once, strcasecmp
+
+		if($opt{fname} && $file){
+			print "$col{red}$file$col{none}:";
+		}
+
+		if($opt{lineno}){
+			print "$col{green}$lineno$col{none}: ";
+		}elsif($opt{fname} && $file){
+			print ' ';
+		}
+
+		if($opt{hl}){
+			print "$`$col{brown}$&$col{none}$'\n";
+		}else{
+			print "$&\n";
+		}
+	}
 }
 
-die "Usage: $0 [--help] [FILES...]\n" if $ARGV[0] eq '--help';
+sub usage(){
+	$printme =<<"!";
+Usage: $0 -[Chn] [FILES...]
+ -h: highlight
+ -C: colour off (only makes sense with -h)
+ -n: show line number
+!
+	print $printme;
+	exit 1;
+}
 
-$doneone = 0;
-$cmd = 'print $&, "\n"';
+
+%opt = (
+	colour => 1,
+	lineno => 0,
+	fname  => 0,
+	hl     => 0
+);
+%col = (
+	brown => "\e[0;31m", # hl
+	red   => "\e[0;35m", # fname
+	green => "\e[0;32m", # lineno
+	none  => "\e[0;0m"
+);
 
 for $arg (@ARGV){
-	if($arg eq '-n'){
-		$cmd = 'print "$`$B$&$A$\'"';
-		next;
+	if($arg eq '-h'){
+		$opt{hl} = 1;
+	}elsif($arg eq '-n'){
+		$opt{lineno} = 1;
 	}elsif($arg eq '-C'){
-		$A = $B = '';
-		next;
+		$opt{colour} = 0;
+	}elsif($arg eq '--help'){
+		usage();
+	}else{
+		push @files, $arg;
 	}
-
-	open F, '<', $arg or die "$arg: $!\n";
-	scan $_ for <F>;
-	close F;
-	$doneone = 1;
 }
 
-if(!$doneone){
-	scan $_ while(<STDIN>);
+usage() if $opt{hl} && !$opt{colour};
+
+$opt{fname} = 1 if $#files > 0 || $opt{lineno};
+unless($opt{colour}){
+	$col{$_} = '' for keys %col;
+}
+
+if(!@files){
+	scan(undef, $., $_) while <STDIN>;
+}else{
+	for $f (@files){
+		$n = 1;
+		open F, '<', $f or die "$f: $!\n";
+		scan($f, $n++, $_) for <F>;
+		close F;
+	}
 }
