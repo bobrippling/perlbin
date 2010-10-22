@@ -50,6 +50,7 @@ sub usage(){
 	$printme =<<"!";
 Usage: $0 -[Chn] [FILES...]
  -h: highlight
+ -c: force colour on (for pipes)
  -C: colour off (only makes sense with -h)
  -n: show line number
 !
@@ -78,6 +79,9 @@ for $arg (@ARGV){
 		$opt{lineno} = 1;
 	}elsif($arg eq '-C'){
 		$opt{colour} = 0;
+	}elsif($arg eq '-c'){
+		usage() if $opt{colour} == 0;
+		$opt{colour} = 2; # force on
 	}elsif($arg eq '--help'){
 		usage();
 	}else{
@@ -88,7 +92,7 @@ for $arg (@ARGV){
 usage() if $opt{hl} && !$opt{colour};
 
 $opt{fname} = 1 if $#files > 0 || $opt{lineno};
-unless($opt{colour}){
+if(!$opt{colour} || ($opt{colour} == 1 && !-t STDOUT)){
 	$col{$_} = '' for keys %col;
 }
 
