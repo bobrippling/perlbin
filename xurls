@@ -9,6 +9,8 @@ sub scan($$$)
 {
 	my ($file, $lineno, $line) = @_;
 
+	chomp $line;
+
 	while($line =~ s!
       ([a-z]+://)?
 
@@ -25,8 +27,7 @@ sub scan($$$)
       ($pathchars+|\($pathchars+\))*
 
 # check for pathchars, or a set of nested parens
-
-      !!xoi){ # allow space + comments, compile once, strcasecmp
+				!!xoi){ # allow space + comments, compile once, strcasecmp
 
 		if($opt{fname} && $file){
 			print "$col{red}$file$col{none}:";
