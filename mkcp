@@ -54,16 +54,30 @@ if($progname eq 'mkcp'){
 
 usage if(@ARGV < 2 or $ARGV[0] eq '--help');
 
-if($ARGV[0] eq '-d'){
-	shift;
-	$debug = 1;
+our ($debug, $inter) = (0, 0); # cmd line opts
+
+# use a temp array, otherwise shift damages the loop
+for(@argv = @ARGV){
+	if($_ eq '-d'){
+		$debug = 1;
+	}elsif($_ eq '-i'){
+		print "interactive\n" if $debug;
+		$inter = 1;
+	}else{
+		shift @ARGV if $_ eq '--';
+		last;
+	}
+	shift @ARGV;
 }
+@argv = undef;
 
 $last  = $ARGV[$#ARGV];
 @files = map { quote($_) } @ARGV[0 .. $#ARGV-1];
 
 $cmd  = $iscopy ? 'cp' : 'mv';
 $args = $iscopy ? '-R' : '';
+
+$args = "$args -i" if $inter;
 
 mkdir_p($last);
 if($debug){

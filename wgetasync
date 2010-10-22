@@ -1,19 +1,54 @@
 #!/usr/bin/perl
 use warnings;
 
+use constant {
+	MAX_CHILD => 150
+};
+
 our %downloads; # Map<PID, Link>
 our %downloads_rev; # reverse of above, for lookup
+our $children = 0;
 my  $doneone = 0;
 
 sub adddownload($)
-{ $link = $_[0];
+{
+	$link = $_[0];
 
-	die "fork" unless defined($pid = fork());
+	while($children >= MAX_CHILD){
+		print STDERR "reached child limit of $children, waiting...\n";
+		waitone();
+	}
 
-	exec "wget -q '$link'" if $pid == 0;
+	die "fork: $!\n" unless defined($pid = fork());
 
+	if($pid == 0){
+		exec "wget -q '$link'";
+		die "exec: $!\n";
+	}
+
+	$children++;
 	$downloads{$pid} = $link;
 	$downloads_rev{$link} = $pid;
+}
+
+sub waitone()
+{
+	$pid = wait();
+	# status in $?
+
+	if($pid == -1){
+		# should never get here
+		print "wait() returned -1, still have children...?:\n";
+		print "pid: $_, link: $downloads{$_}\n" for keys %downloads;
+		exit 1;
+	}
+
+	$children--;
+
+	print "wget = $? for " . $downloads{$pid} . "\n";
+	$errs{$downloads{$pid}} = $? if $?;
+
+	delete $downloads{$pid};
 }
 
 
@@ -36,21 +71,7 @@ if(!$doneone){
 }
 
 # collect downloads
-while(keys %downloads){
-	# status in $?
-	$pid = wait();
-	if($pid == -1){
-		# should never get here
-		print "wait() returned -1, still have children...?:\n";
-		print "pid: $_, link: $downloads{$_}\n" for keys %downloads;
-		exit 1;
-	}
-
-	print "wget = $? for " . $downloads{$pid} . "\n";
-	$errs{$downloads{$pid}} = $? if $?;
-
-	delete $downloads{$pid};
-}
+waitone() while keys %downloads;
 
 if(keys %errs){
 	print STDERR "error $errs{$_} for $_\n" for keys %errs;
