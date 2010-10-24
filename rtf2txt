@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+
+use warnings;
+
+while(<>){
+	if(m#\\par (.*)#){
+		local $_ = $1;
+		s{\\[a-z0-9]+}[]g;
+		print "$_\n";
+	}
+}
