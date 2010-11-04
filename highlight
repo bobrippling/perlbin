@@ -6,12 +6,18 @@ use Term::ANSIColor;
 # color("yellow"), color("bold red"), etc
 # color("reset")
 
+sub basename($)
+{
+	return $1 if $_[0] =~ m|.*/([^/]+)$|;
+	return $_[0];
+}
+
 use constant HIGHLIGHT => "bold yellow";
 
 my($lineno,$regex) = (0,undef);
 my %filelist = ();
 
-warn "output isn't a terminal\n" if !-t STDOUT;
+warn basename($0) . ": output isn't a terminal\n" if !-t STDOUT;
 
 for(@ARGV){
 	if($_ eq '-n'){

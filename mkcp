@@ -75,7 +75,7 @@ $last  = $ARGV[$#ARGV];
 @files = map { quote($_) } @ARGV[0 .. $#ARGV-1];
 
 $cmd  = $iscopy ? 'cp' : 'mv';
-$args = $iscopy ? '-R' : '';
+$args = $iscopy ? '-LR' : '';
 
 $args = "$args -i" if $inter;
 
