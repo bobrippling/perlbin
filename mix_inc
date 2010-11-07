@@ -1,0 +1,80 @@
+#!/usr/bin/perl
+use warnings;
+
+# Simple mixer control '01. 31 Hz',0
+#   Capabilities: pvolume penum
+#   Playback channels: Front Left - Front Right
+#   Limits: Playback 0 - 100
+#   Mono:
+#   Front Left: Playback 70 [70%]
+#   Front Right: Playback 70 [70%]
+
+sub usage(){
+	print "Usage: $0 [+/-NUM] [-]\n";
+	print " NUM: Number to inc/dec all channels by\n";
+	print "   -: Read channel desc from stdin\n";
+	exit 1;
+}
+
+$SIG{'CHLD'} = 'IGNORE';
+
+$vol_adj = 0;
+$cmd = 'amixer -D equal |';
+
+for(@ARGV){
+	if(m/^(\+?|-)[0-9]+$/){
+		$vol_adj = $_;
+	}elsif($_ eq '-'){
+		$cmd = ''; # stdin
+	}else{
+		usage();
+	}
+}
+
+if($cmd){
+	open(STDIN, $cmd) or die;
+}# else read from stdin
+
+@channels = (); # array of strings for each channel
+
+@tmp = (); # tmp store
+
+while(<STDIN>){
+	if(/^[^\s]/ && @tmp){
+		push @channels, [@tmp];
+		@tmp = ();
+	}
+	push @tmp, $_;
+}
+push @channels, [@tmp] if @tmp;
+
+
+for $aref (@channels){
+	$str = join ' ', @$aref;
+
+	if($str =~ /control '*([^']+)'/){
+		$name = $1;
+	}else{
+		die "Couldn't get name!\n";
+	}
+
+	if($str =~ /\[([0-9]+)%\]/){
+		$vol = $1;
+		push @channel_list, {'name' => $name, 'vol' => $vol};
+	}else{
+		warn "Warning: Couldn't get vol for $name\n" . join "\t", @$aref;
+	}
+}
+
+if($vol_adj){
+	for(@channel_list){
+		system("amixer -qD equal set '$$_{'name'}' " . ($$_{'vol'} += $vol_adj)) or die "system(amixer set)\n";
+	}
+}
+
+for(@channel_list){
+	%chan = %$_;
+	($name = $chan{'name'}) =~ s/[0-9]+\. *//;
+
+	printf "%6s => %02d%%\n", $name, $chan{'vol'};
+}
