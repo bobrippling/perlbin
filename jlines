@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+use warnings;
+
+sub usage()
+{
+	print "Usage: $0 [-N] [files...]\n";
+	exit 1;
+}
+
+$nlines = 0;
+# 0 means all on one line, otherwise join $nlines lines
+
+
+for(0 .. $#ARGV){
+	$_ = $ARGV[$_];
+	if(/^-([0-9]+)$/){
+		usage if $nlines;
+		$nlines = $1;
+		shift @ARGV;
+	}else{
+		last;
+	}
+}
+
+$n = 0;
+while(<>){
+	chomp;
+	push @lines, $_;
+	if(++$n == $nlines){
+		print join ' ', @lines, $/;
+		@lines = ();
+		$n = 0;
+	}
+}
+print join ' ', @lines, $/ if @lines;

@@ -1,9 +1,0 @@
-#!/usr/bin/perl
-use warnings;
-
-while(<>){
-	chomp;
-	push @a, $_;
-}
-
-print join ' ', @a, $/
