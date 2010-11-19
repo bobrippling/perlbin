@@ -1,7 +1,14 @@
 #!/usr/bin/perl -w
-use strict;
+use warnings;
 
-my %htmlh = (
+sub usage()
+{
+	print "Usage: $0 [files_to_rename]\n";
+	print "  If no files are given, stdin is read\n";
+	exit 1;
+}
+
+%htmlh = (
 	"%20"		 => " ",
 	"%21"		 => "!",
 	"%2c"		 => ",",
@@ -15,37 +22,18 @@ my %htmlh = (
 	"%3A"		 => ":",
 );
 
-# TODO: change to File::Copy
+sub translate($)
+{
+	for $k(keys %htmlh){
+		if(m#$k#){
+			$_[0] =~ s/$k/$htmlh{$k}/g;
+		}
+	}
+	return $_[0]; # dup but oh well
+}
 
 if(@ARGV){
-
-	if($ARGV[0] eq '--help'){
-		print "Usage: $0 [files_to_rename]\n";
-		print "  If no files are given, stdin is read\n";
-		exit 1;
-	}
-
-	# move files
-	for(@ARGV){
-		for my $k(keys %htmlh){
-			if(m#$k#){
-				my $old = $_;
-				s/$k/$htmlh{$k}/g;
-				rename $old, $_ || die "$_: $!\n";
-			}
-		}
-	}
+	print translate $_ for @ARGV;
 }else{
-	my $mask = '';
-	vec($mask, fileno(STDIN), 1) = 1;
-
-	select($mask, undef, undef, 0.1) <= 0 and die "need args\n";
-
-	# got some stdin goodness
-	while(<STDIN>){
-		for my $k(keys %htmlh){
-			/$k/ && s/$k/$htmlh{$k}/g
-		}
-		print;
-	}
+	print translate $_ while <STDIN>;
 }

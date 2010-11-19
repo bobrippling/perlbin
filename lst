@@ -1,0 +1,62 @@
+#!/usr/bin/perl
+use warnings;
+
+use constant
+{
+	INDENT => "\t"
+};
+
+sub lst
+{
+	for my $dir (@_){
+		$dir =~ s#/$##;
+
+		opendir(my $dh, $dir) or die "opendir: $dir: $!\n";
+		my @ents = readdir $dh;
+		closedir $dh;
+
+		for(@ents){
+			my $hidden = m#^\.#;
+			my $file = "$dir/$_";
+
+			print INDENT x $indent, "$file\n" if !$hidden or $opt{all};
+
+			if(-d $file and $opt{recursive} and $file !~ m#/\.\.?$#){
+				$indent++;
+				lst($file);
+				$indent--;
+			}
+		}
+	}
+}
+
+$indent = 0;
+
+%opt = (
+	recursive => 1,
+	all       => 0,
+);
+
+%args = (
+	'-a' => [1, \$opt{all}      ],
+	'-R' => [0, \$opt{recursive}],
+);
+
+if(@ARGV){
+	while($ARGV[0] =~ /^-/){
+		if($ARGV[0] eq '--'){
+			shift @ARGV;
+			last;
+		}elsif(my $ref = $args{$ARGV[0]}){
+			${${$ref}[1]} = ${$ref}[0];
+		}else{
+			last;
+		}
+
+		shift @ARGV;
+	}
+}
+
+$ARGV[0] = '.' unless @ARGV;
+
+lst @ARGV;
