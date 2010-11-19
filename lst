@@ -10,9 +10,36 @@ sub ignore
 {
 	for $arg (@_){
 		for $x (@exclude){
-			return 1 if $arg =~ /$x/i;
+			return 1 if $arg =~ /$x/;
 		}
 	}
+}
+
+sub classify($$)
+{
+	my $name = $opt{full} ? $_[0] : $_[1];
+
+	my %class = (
+		'x' => ['*', \$col{green}   ],
+		'd' => ['/', \$col{blue}    ],
+		'l' => ['@', \$col{cyan}    ],
+		'p' => ['|', \$col{purple}  ],
+		'S' => ['=', \$col{brown}   ],
+	);
+
+	for(keys %class){
+		if(eval "-$_ '$_[0]'"){
+			print ${${$class{$_}}[1]},
+						INDENT x $indent,
+						$name,
+						$opt{classify} ? ${$class{$_}}[0] : '',
+						"\e[0;0m\n";
+
+			return;
+		}
+	}
+
+	print INDENT x $indent, $name, "\n";
 }
 
 sub lst
@@ -29,33 +56,48 @@ sub lst
 			my $file = "$dir/$_";
 
 			unless(ignore $file){
-				print INDENT x $indent, ($opt{full} ? $file : $_), "\n" if !$hidden or $opt{all};
+				if(!$hidden or $opt{all}){
+					classify($file, $_);
 
-				if(-d $file and $opt{recursive} and $file !~ m#/\.\.?$#){
-					$indent++;
-					lst($file);
-					$indent--;
+					if(-d $file and $opt{recursive} and $file !~ m#/\.\.?$#){
+						$indent++;
+						lst($file);
+						$indent--;
+					}
 				}
 			}
 		}
 	}
 }
 
-$indent = 0;
+@exclude = ();
+$indent  = 0;
+$col     = -t STDOUT;
+
+my %ls_colours = map { split /=/ } split /:/, $ENV{LS_COLORS};
+%col = (
+	green   => "\e[" . ($ls_colours{ex} or "1;32") . 'm',
+	blue    => "\e[" . ($ls_colours{di} or "0;34") . 'm',
+	cyan    => "\e[" . ($ls_colours{ln} or "1;34") . 'm',
+	purple  => "\e[" . ($ls_colours{pi} or "0;35") . 'm',
+	brown   => "\e[" . ($ls_colours{so} or "0;33") . 'm',
+);
 
 %opt = (
 	recursive => 1,
 	full      => 0,
 	all       => 0,
+	classify  => 0,
 );
 
 %args = (
-	'-R' => [0, \$opt{recursive}],
+	'-d' => [0, \$opt{recursive}],
 	'-f' => [1, \$opt{full}     ],
 	'-a' => [1, \$opt{all}      ],
+	'-F' => [1, \$opt{classify} ],
+	'-c' => [1, \$col           ],
+	'-C' => [0, \$col           ],
 );
-
-@exclude = ();
 
 while(@ARGV and $ARGV[0] =~ /^-/){
 	if($ARGV[0] eq '--'){
@@ -68,8 +110,10 @@ while(@ARGV and $ARGV[0] =~ /^-/){
 	}elsif($ARGV[0] eq '--help'){
 		print "Usage: $0 [-a] [-R] [-f] [-xREGEX]...\n";
 		print "  -a: All files\n";
-		print "  -R: Don't recurse\n";
+		print "  -d: Don't recurse\n";
 		print "  -f: Show full paths\n";
+		print "  -F: Classify with */=>@|\n";
+		print "  -C: No colour (-c to force colour)\n";
 		print "  -x: Exclude files matching REGEX\n";
 		exit 1;
 	}else{
@@ -77,6 +121,10 @@ while(@ARGV and $ARGV[0] =~ /^-/){
 	}
 
 	shift @ARGV;
+}
+
+if(!$col){
+	$col{$_} = '' for keys %col;
 }
 
 $ARGV[0] = '.' unless @ARGV;
