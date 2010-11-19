@@ -6,6 +6,15 @@ use constant
 	INDENT => "\t"
 };
 
+sub ignore
+{
+	for $arg (@_){
+		for $x (@exclude){
+			return 1 if $arg =~ /$x/i;
+		}
+	}
+}
+
 sub lst
 {
 	for my $dir (@_){
@@ -19,12 +28,14 @@ sub lst
 			my $hidden = m#^\.#;
 			my $file = "$dir/$_";
 
-			print INDENT x $indent, "$file\n" if !$hidden or $opt{all};
+			unless(ignore $file){
+				print INDENT x $indent, ($opt{full} ? $file : $_), "\n" if !$hidden or $opt{all};
 
-			if(-d $file and $opt{recursive} and $file !~ m#/\.\.?$#){
-				$indent++;
-				lst($file);
-				$indent--;
+				if(-d $file and $opt{recursive} and $file !~ m#/\.\.?$#){
+					$indent++;
+					lst($file);
+					$indent--;
+				}
 			}
 		}
 	}
@@ -34,27 +45,38 @@ $indent = 0;
 
 %opt = (
 	recursive => 1,
+	full      => 0,
 	all       => 0,
 );
 
 %args = (
-	'-a' => [1, \$opt{all}      ],
 	'-R' => [0, \$opt{recursive}],
+	'-f' => [1, \$opt{full}     ],
+	'-a' => [1, \$opt{all}      ],
 );
 
-if(@ARGV){
-	while($ARGV[0] =~ /^-/){
-		if($ARGV[0] eq '--'){
-			shift @ARGV;
-			last;
-		}elsif(my $ref = $args{$ARGV[0]}){
-			${${$ref}[1]} = ${$ref}[0];
-		}else{
-			last;
-		}
+@exclude = ();
 
+while(@ARGV and $ARGV[0] =~ /^-/){
+	if($ARGV[0] eq '--'){
 		shift @ARGV;
+		last;
+	}elsif(my $ref = $args{$ARGV[0]}){
+		${${$ref}[1]} = ${$ref}[0];
+	}elsif($ARGV[0] =~ /^-x(.+)$/){
+		push @exclude, $1;
+	}elsif($ARGV[0] eq '--help'){
+		print "Usage: $0 [-a] [-R] [-f] [-xREGEX]...\n";
+		print "  -a: All files\n";
+		print "  -R: Don't recurse\n";
+		print "  -f: Show full paths\n";
+		print "  -x: Exclude files matching REGEX\n";
+		exit 1;
+	}else{
+		last;
 	}
+
+	shift @ARGV;
 }
 
 $ARGV[0] = '.' unless @ARGV;
