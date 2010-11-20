@@ -38,19 +38,29 @@ sub waitone()
 
 	if($pid == -1){
 		# should never get here
-		print "wait() returned -1, still have children...?:\n";
+		print "$col{err}wait() returned -1, still have children...?:$col{off}\n";
 		print "pid: $_, link: $downloads{$_}\n" for keys %downloads;
 		exit 1;
 	}
 
 	$children--;
 
-	print "wget = $? for " . $downloads{$pid} . "\n";
+	print "$col{status}wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
 	$errs{$downloads{$pid}} = $? if $?;
 
 	delete $downloads{$pid};
 }
 
+%col = (
+	status => "\e[0;32m", # green
+	info   => "\e[0;34m", # blue
+	err    => "\e[0;31m", # red
+	off    => "\e[0;0m",
+);
+
+if(!-t STDOUT){
+	$col{$_} = '' for keys %col;
+}
 
 for(@ARGV){
 	if($_ eq '--help'){
