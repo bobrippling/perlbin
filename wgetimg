@@ -17,7 +17,10 @@ our $wget_verbose  = 0;
 our %downloads; # Map<PID, Link>
 our %downloads_rev; # reverse of above, for lookup
 
-our $threaded = 1;
+our @links; # for exec wgetasync
+
+our ($threaded,$exec_wgetasync) = (1, 1);
+
 
 sub usage()
 {
@@ -30,6 +33,7 @@ Where OPTIONS can be either:
   -b: Both -a and -a
   -v: Show wget output
   -T: Single 'threaded' (wait for each wget)
+  -M: Manual (don't exec wgetasync)
 
 -a is default
 
@@ -50,7 +54,10 @@ sub basename($)
 
 sub adddownload($)
 {
-	$link = $_[0];
+	my $link = $_[0];
+
+	push @links, $link;
+	return if $exec_wgetasync;
 
 	die "fork" unless defined($pid = fork());
 
@@ -65,7 +72,7 @@ sub adddownload($)
 
 sub dlimage($)
 {
-	$file = basename($link = $_[0]);
+	my $file = basename($link = $_[0]);
 
 	if(-e $file){
 		print "have $link\n";
@@ -168,6 +175,10 @@ for $arg(@ARGV){
 		$threaded = 0;
 		next;
 
+	}elsif($options && $arg eq '-M'){
+		$exec_wgetasync = 0;
+		next;
+
 	}elsif($options && $arg eq '--'){
 		$options = 0;
 		next;
@@ -183,7 +194,15 @@ for $arg(@ARGV){
 
 linkmeupscotty unless $doneone;
 
-if($threaded){
+if($exec_wgetasync){
+	unless(@links){
+		print STDERR "$0: nothing to do\n";
+		exit 0;
+	}
+	open XARGS, "|xargs wgetasync" or die "$0: xargs pipe: $!\n";
+	print XARGS $_, $/ for @links;
+	close XARGS;
+}elsif($threaded){
 	# collect downloads
 	my %errs;
 

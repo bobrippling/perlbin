@@ -4,14 +4,17 @@ use warnings;
 
 sub usage
 {
-	print "Usage: $0 src-file(s) dest-dir\n";
+	print "Usage: $0 [-n] src-file(s) dest-dir\n";
 	print "Program to mkdir then $cmd\n";
 	exit 1;
 }
 
 sub quote($)
 {
-	return "'$_[0]'";
+	my $_ = $_[0];
+	s/"/\\"/g;
+	s/[`\$]/\\&/g;
+	return '"' . $_ . '"';
 }
 
 sub basename($)
@@ -58,11 +61,13 @@ our ($debug, $inter) = (0, 0); # cmd line opts
 
 # use a temp array, otherwise shift damages the loop
 for(@argv = @ARGV){
-	if($_ eq '-d'){
+	if($_ eq '-n'){
 		$debug = 1;
 	}elsif($_ eq '-i'){
-		print "interactive\n" if $debug;
+		print STDERR "interactive\n" if $debug;
 		$inter = 1;
+	}elsif($_ eq '-R'){
+		print STDERR "already recursive\n";
 	}else{
 		shift @ARGV if $_ eq '--';
 		last;

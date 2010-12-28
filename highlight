@@ -1,23 +1,24 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Term::ANSIColor;
-# usage:
-# color("yellow"), color("bold red"), etc
-# color("reset")
-
 sub basename($)
 {
 	return $1 if $_[0] =~ m|.*/([^/]+)$|;
 	return $_[0];
 }
 
-use constant HIGHLIGHT => "bold yellow";
 
 my($lineno,$regex) = (0,undef);
 my %filelist = ();
 
-warn basename($0) . ": output isn't a terminal\n" if !-t STDOUT;
+my %grep_cols = map { split /=/ } split /:/, $ENV{GREP_COLORS};
+my %colours  = (
+	hl   => "\e[" . ($grep_cols{mt} or '1;31') . 'm',
+	bg   => "\e[" . ($grep_cols{sl} or '1;30') . 'm',
+	norm => "\e[0m"
+);
+
+warn basename($0) . ": output isn't a terminal\n" unless -t STDOUT;
 
 for(@ARGV){
 	if($_ eq '-n'){
@@ -32,9 +33,12 @@ for(@ARGV){
 die "Need regex\n" unless defined $regex;
 
 while(<>){
-	print $..": " if($lineno);
+	print $colours{norm} . $. . ": " if($lineno);
+
+	print $colours{bg};
+
 	if(m/$regex/io){
-		print $`.color(HIGHLIGHT).$&.color("reset").$';
+		print $` . $colours{hl} . $& . $colours{bg} . $';
 	}else{
 		print $_;
 	}

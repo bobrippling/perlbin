@@ -3,12 +3,13 @@ use warnings;
 
 sub usage()
 {
-	print "Usage: $0 [-N] [files...]\n";
+	print "Usage: $0 [-n] [-5] [files...]\n";
 	exit 1;
 }
 
 $nlines = 0;
 # 0 means all on one line, otherwise join $nlines lines
+$\ = "\n";
 
 
 for(0 .. $#ARGV){
@@ -16,10 +17,13 @@ for(0 .. $#ARGV){
 	if(/^-([0-9]+)$/){
 		usage if $nlines;
 		$nlines = $1;
-		shift @ARGV;
+	}elsif($_ eq '-n'){
+		usage unless $\;
+		$\ = '';
 	}else{
 		last;
 	}
+	shift @ARGV;
 }
 
 $n = 0;
@@ -27,9 +31,9 @@ while(<>){
 	chomp;
 	push @lines, $_;
 	if(++$n == $nlines){
-		print join ' ', @lines, $/;
+		print join ' ', @lines;
 		@lines = ();
 		$n = 0;
 	}
 }
-print join ' ', @lines, $/ if @lines;
+print join ' ', @lines if @lines;

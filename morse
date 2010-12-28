@@ -34,27 +34,43 @@ our %code = (
 
 sub decode($)
 {
-	$_ = $_[0];
+	my $_ = $_[0];
+	my $ret = '';
 
-	$ret = '';
+	s|[^ ./-]||g;
+	if(/\//){
+		while(s|^([^/]*)/||){
+			# $1 = [\.- ]*
+			my $word = $1;
 
-	s|[^ \./-]||g;
-
-	while(s|^([^/]*)/||){
-		# $1 = [\.- ]*
-		$word = $1;
-
-		while($word =~ s| *([^ ]*) ||){
-			# $1 = letter = [\.-]
-			if(!$code{$1}){
-				warn "Unknown code \"$1\"\n";
-			}else{
-				$ret .= $code{$1};
+			while($word =~ s| *([^ ]*) ||){
+				# $1 = letter = [\.-]
+				if(!$code{$1}){
+					warn "Unknown code \"$1\"\n";
+				}else{
+					$ret .= $code{$1};
+				}
 			}
-		}
 
-		$ret .= ' ';
+			$ret .= ' ';
+		}
+	}else{
+		my $len = 1;
+		warn "ambigous input!\n";
+		s| ||g;
+		do{
+			my $current = substr $_, 0, $len++;
+			#print "looking for '$current'";
+			if($code{$current}){
+				#print "found '$current': $code{$current}";
+				$_ = substr $_, $len;
+				$len = 1;
+				$ret .= $code{$current};
+			}
+		}while(length && $len < length);
 	}
+
+	print STDERR "left over: $_" if length;
 
 	return $ret;
 }

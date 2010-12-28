@@ -26,6 +26,8 @@ for(@ARGV){
 		$vol_adj = $_;
 	}elsif($_ eq '-'){
 		$cmd = ''; # stdin
+	}elsif($_ eq 'tog'){
+		exec "amixer set Headphone toggle";
 	}else{
 		usage();
 	}
@@ -68,7 +70,7 @@ for $aref (@channels){
 
 if($vol_adj){
 	for(@channel_list){
-		system("amixer -qD equal set '$$_{'name'}' " . ($$_{'vol'} += $vol_adj)) or die "system(amixer set)\n";
+		system("amixer -qD equal set '$$_{'name'}' " . ($_->{'vol'} += $vol_adj)) or die "system(amixer set)\n";
 	}
 }
 

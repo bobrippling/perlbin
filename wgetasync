@@ -45,8 +45,21 @@ sub waitone()
 
 	$children--;
 
-	print "$col{status}wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
-	$errs{$downloads{$pid}} = $? if $?;
+	if($?){
+		print $col{err};
+	}else{
+		print $col{status};
+	}
+
+	my $fh;
+	if($?){
+		$fh = STDERR;
+	}else{
+		$fh = STDOUT;
+	}
+
+	print $fh "wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
+	#$errs{$downloads{$pid}} = $? if $?;
 
 	delete $downloads{$pid};
 }
@@ -58,7 +71,7 @@ sub waitone()
 	off    => "\e[0;0m",
 );
 
-if(!-t STDOUT){
+unless(-t STDOUT){
 	$col{$_} = '' for keys %col;
 }
 
@@ -83,6 +96,7 @@ if(!$doneone){
 # collect downloads
 waitone() while keys %downloads;
 
-if(keys %errs){
-	print STDERR "error $errs{$_} for $_\n" for keys %errs;
-}
+#if(keys %errs){
+	# TODO: retry option
+	#print STDERR "error $col{err}$errs{$_}$col{off} for $_\n" for keys %errs;
+#}
