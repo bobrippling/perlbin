@@ -9,31 +9,51 @@ sub usage()
 }
 
 %htmlh = (
-	"%20"		 => " ",
-	"%21"		 => "!",
-	"%2c"		 => ",",
 	"%c2%a7"	=> "S",
 	"%d0%94"	=> "A",
 	"%c3%a9"	=> "e",
-	"%27"		 => "'",
-	"%28"		 => "(",
-	"%29"		 => ")",
-	"%2F"		 => "/",
-	"%3A"		 => ":",
 );
 
-sub translate($)
+sub decode($)
 {
+	my $_ = $_[0];
+
+	$_ = $` . chr(hex $1) . $' while m#%([0-9A-Za-z]{2})#;
+
 	for $k(keys %htmlh){
 		if(m#$k#){
-			$_[0] =~ s/$k/$htmlh{$k}/g;
+			s/$k/$htmlh{$k}/g;
 		}
 	}
-	return $_[0]; # dup but oh well
+
+	return $_;
 }
 
-if(@ARGV){
-	print translate $_ for @ARGV;
-}else{
-	print translate $_ while <STDIN>;
+sub encode($)
+{
+	my $_ = $_[0];
+	my $ret = '';
+
+	for(split //){
+		if(/[a-zA-Z0-9_\.-]/ || $_ eq "\n"){
+			$ret .= $_;
+		}else{
+			$ret .= '%' . sprintf '%x', ord;
+		}
+	}
+
+	return $ret;
 }
+
+my $f;
+(my $basename = $0) =~ s#.*/([^/]+)$#$1#;
+
+if($basename eq 'urlencode'){
+	$f = \&encode;
+}elsif($basename eq 'urldecode'){
+	$f = \&decode;
+}else{
+	die "$0: need to be invoked as url{en,de}code\n";
+}
+
+print $f->($_) while <>;
