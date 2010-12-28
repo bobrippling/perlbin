@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+use warnings;
+
+sub usage()
+{
+	print "Usage: $0 [-v] [grep_args] -- [files]\n";
+	print " -v: verbose\n";
+	exit 1;
+}
+
+my $verbose = 0;
+
+if(@ARGV && $ARGV[0] eq '-v'){
+	$verbose = 1;
+	shift @ARGV;
+}
+
+$pivot = -1;
+
+for my $i (0 .. $#ARGV){
+	$pivot = $i if $ARGV[$i] eq '--';
+}
+
+usage unless $pivot != -1;
+
+my @gargs = @ARGV[0 .. $pivot - 1];
+my @files = @ARGV[$pivot + 1 .. $#ARGV];
+
+# printf interprets \033 properly
+$red   = "\033[0;35m";
+$nocol = "\033[0;00m";
+
+for $f (@files){
+	my $cmd = "pdftotext '$f' - 2>/dev/null | grep --color=always " . join(' ', @gargs) . ' 2>/dev/null';
+
+	for(my @out = `$cmd`){
+		if($verbose){
+			print "$red$f$nocol: " . join(' ', @out);
+		}else{
+			print "$f\n"
+		}
+	}
+}
