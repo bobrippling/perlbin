@@ -7,11 +7,16 @@ sub basename($)
 	return $_[0];
 }
 
+sub usage()
+{
+	print "Usage: $0 [-n] [-I] regex [files...]\n";
+	exit 1;
+}
 
 my($lineno,$regex) = (0,undef);
 my %filelist = ();
 
-my %grep_cols = map { split /=/ } split /:/, $ENV{GREP_COLORS};
+my %grep_cols = map { split /=/ } grep { /=/ } split /:/, $ENV{GREP_COLORS};
 my %colours  = (
 	hl   => "\e[" . ($grep_cols{mt} or '1;31') . 'm',
 	bg   => "\e[" . ($grep_cols{sl} or '1;30') . 'm',
@@ -20,24 +25,32 @@ my %colours  = (
 
 warn basename($0) . ": output isn't a terminal\n" unless -t STDOUT;
 
+my @files;
+my $sens = 0;
+
 for(@ARGV){
 	if($_ eq '-n'){
 		$lineno = 1;
-		shift @ARGV;
-	}else{
+	}elsif($_ eq '-I'){
+		$sens = 1;
+	}elsif($_ eq '--help'){
+		usage();
+	}elsif(!defined $regex){
 		$regex = $_;
-		shift @ARGV;
-		last;
+	}else{
+		push @files, $_;
 	}
 }
-die "Need regex\n" unless defined $regex;
+usage() unless defined $regex;
+
+@ARGV = @files;
 
 while(<>){
 	print $colours{norm} . $. . ": " if($lineno);
 
 	print $colours{bg};
 
-	if(m/$regex/io){
+	if($sens ? m/$regex/o : m/$regex/oi){
 		print $` . $colours{hl} . $& . $colours{bg} . $';
 	}else{
 		print $_;
