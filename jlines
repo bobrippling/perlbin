@@ -26,6 +26,10 @@ for(0 .. $#ARGV){
 	shift @ARGV;
 }
 
+if($nlines == 0 && @ARGV == 0){
+	exec "xargs " . (length($\) ? '' : "echo -n");
+}
+
 $n = 0;
 while(<>){
 	chomp;
