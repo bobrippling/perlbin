@@ -11,8 +11,12 @@ use warnings;
 
 sub usage(){
 	print "Usage: $0 [+/-NUM] [-]\n";
+	print "       $0 ho[n|ff]\n";
+	print "       $0 tog\n";
 	print " NUM: Number to inc/dec all channels by\n";
 	print "   -: Read channel desc from stdin\n";
+	print " ho*: headphones on or off\n";
+	print " tog: toggle headphones\n";
 	exit 1;
 }
 
@@ -26,6 +30,8 @@ for(@ARGV){
 		$vol_adj = $_;
 	}elsif($_ eq '-'){
 		$cmd = ''; # stdin
+	}elsif(/ho(n|ff)/){
+		exec "amixer set Headphone o$1";
 	}elsif($_ eq 'tog'){
 		exec "amixer set Headphone toggle";
 	}else{
