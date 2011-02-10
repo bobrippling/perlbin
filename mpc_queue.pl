@@ -2,12 +2,28 @@
 use warnings;
 use strict;
 
-my $dry = 0;
+sub usage();
+
+my $dry  = 0;
+my $bg   = 0;
+my $fast = 1;
 my %playlist;
 
-if(@ARGV && $ARGV[0] eq '-n'){
-	$dry = 1;
-	shift;
+my @argv = @ARGV;
+
+for(@argv){
+	if($_ eq '-n'){
+		$dry = 1;
+	}elsif($_ eq '-f'){
+		$bg = 1;
+	}elsif($_ eq '-s'){
+		$fast = 0;
+	}elsif($_ eq '--help'){
+		usage();
+	}else{
+		last;
+	}
+	shift @ARGV;
 }
 
 sub get_playlist()
@@ -20,7 +36,8 @@ sub get_playlist()
 
 sub usage()
 {
-	print STDERR "Usage: $0 song1 [song2 [song3...]]\n";
+	print STDERR "Usage: $0 [OPT] song1 [song2 [song3...]]\n";
+	print STDERR " Opt can be either -n or -f, dry/background\n";
 	exit 1;
 }
 
@@ -39,20 +56,14 @@ sub mpc
 	}
 }
 
-sub getnam($)
-{
-	for(values %playlist){
-		return $_ if m/$_[0]/io;
-	}
-	die "Couldn't find $_[0]\n";
-}
-
 sub getid($)
 {
-	for(keys %playlist){
-		return $_ if $playlist{$_} =~ m/$_[0]/io;
+	my $reg = shift;
+
+	for my $k (keys %playlist){
+		return $k if $playlist{$k} =~ m/$reg/i;
 	}
-	die "Couldn't find $_[0]\n";
+	die "Couldn't find $_[0] (key)\n";
 }
 
 usage() unless @ARGV;
@@ -60,17 +71,38 @@ usage() unless @ARGV;
 get_playlist();
 
 for(@ARGV){
-	print "queued " . getid($_) . ' (' . getnam($_) . ")\n";
+	my $id = getid($_);
+	print "queued \"$playlist{$id}\" ($id) for /$_/\n";
+}
+
+if(!$fast && -t STDOUT){
+	$| = 1;
+	print "interrupt to cancel,";
+	for($_ = 3; $_ >= 0; $_--){
+		print " $_";
+		sleep 1;
+	}
+	print "\r\e[K";
 }
 
 exit 0 if $dry;
+
+if($bg){
+	my $pid = fork();
+	die "fork(): $!\n" unless defined $pid;
+
+	if($pid != 0){
+		print "forked to background, pid $pid\n";
+		exit 0;
+	}
+}
 
 for(@ARGV){
 	mpc('single on');
 	sleep 1 while playing();
 
 	my $id = getid($_);
-	print "playing $id (" . getnam($_) . ")...\n";
+	print "playing $id (" . getnam($_) . ")\n";
 	mpc("play $id");
 }
 
