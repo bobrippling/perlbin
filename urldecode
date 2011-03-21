@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 use warnings;
 
 sub usage()
@@ -21,9 +21,7 @@ sub decode($)
 	$_ = $` . chr(hex $1) . $' while m#%([0-9A-Za-z]{2})#;
 
 	for $k(keys %htmlh){
-		if(m#$k#){
-			s/$k/$htmlh{$k}/g;
-		}
+		s/$k/$htmlh{$k}/g;
 	}
 
 	return $_;
@@ -55,5 +53,7 @@ if($basename eq 'urlencode'){
 }else{
 	die "$0: need to be invoked as url{en,de}code\n";
 }
+
+binmode STDIN;
 
 print $f->($_) while <>;

@@ -27,15 +27,17 @@ sub classify($$)
 		'S' => ['=', \$col{brown}   ],
 	);
 
-	for(keys %class){
-		if(eval "-$_ '$_[0]'"){
-			print ${${$class{$_}}[1]},
-						INDENT x $indent,
-						$name,
-						$opt{classify} ? ${$class{$_}}[0] : '',
-						"\e[0;0m\n";
+	if($opt{classify}){
+		for(keys %class){
+			if(eval "-$_ '$_[0]'"){
+				print ${${$class{$_}}[1]},
+							INDENT x $indent,
+							$name,
+							$opt{classify} ? ${$class{$_}}[0] : '',
+							"\e[0;0m\n";
 
-			return;
+				return;
+			}
 		}
 	}
 
@@ -59,7 +61,17 @@ sub lst
 				if(!$hidden or $opt{all}){
 					classify($file, $_);
 
-					if(-d $file and $opt{recursive} and $file !~ m#/\.\.?$#){
+					my $recurse = -d $file && $opt{recursive} && !($file =~ m#/\.\.?$#);
+
+					if($recurse and -l $file){
+						if($opt{follow_ln}){
+							$recurse = 1;
+						}else{
+							$recurse = 0;
+						}
+					}
+
+					if($recurse){
 						$indent++;
 						lst($file);
 						$indent--;
@@ -88,6 +100,7 @@ my %ls_colours = map { split /=/ } split /:/, $ENV{LS_COLORS};
 	full      => 0,
 	all       => 0,
 	classify  => 0,
+	follow_ln => 0,
 );
 
 %args = (
@@ -97,6 +110,7 @@ my %ls_colours = map { split /=/ } split /:/, $ENV{LS_COLORS};
 	'-F' => [1, \$opt{classify} ],
 	'-c' => [1, \$col           ],
 	'-C' => [0, \$col           ],
+	'-L' => [1, \$opt{follow_ln}],
 );
 
 while(@ARGV and $ARGV[0] =~ /^-/){
@@ -113,6 +127,7 @@ while(@ARGV and $ARGV[0] =~ /^-/){
 		print "  -d: Don't recurse\n";
 		print "  -f: Show full paths\n";
 		print "  -F: Classify with */=>@|\n";
+		print "  -L: Follow symbolic links\n";
 		print "  -C: No colour (-c to force colour)\n";
 		print "  -x: Exclude files matching REGEX\n";
 		exit 1;

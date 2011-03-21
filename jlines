@@ -12,8 +12,8 @@ $nlines = 0;
 $\ = "\n";
 
 
-for(0 .. $#ARGV){
-	$_ = $ARGV[$_];
+my @argv;
+for(@argv = @ARGV){
 	if(/^-([0-9]+)$/){
 		usage if $nlines;
 		$nlines = $1;

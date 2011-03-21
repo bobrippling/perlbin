@@ -31,7 +31,8 @@ $red   = "\033[0;35m";
 $nocol = "\033[0;00m";
 
 for $f (@files){
-	my $cmd = "pdftotext '$f' - 2>/dev/null | grep --color=always " . join(' ', @gargs) . ' 2>/dev/null';
+	my $cmd = "pdftotext '$f' - 2>/dev/null | grep --color=always " .
+		join(' ', map { "'$_'" } @gargs) . ' 2>/dev/null';
 
 	for(my @out = `$cmd`){
 		if($verbose){

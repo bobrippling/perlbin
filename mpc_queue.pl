@@ -4,9 +4,10 @@ use strict;
 
 sub usage();
 
-my $dry  = 0;
-my $bg   = 0;
-my $fast = 1;
+my $dry   = 0;
+my $bg    = 0;
+my $query = 0;
+my $stop  = 0;
 my %playlist;
 
 my @argv = @ARGV;
@@ -16,11 +17,14 @@ for(@argv){
 		$dry = 1;
 	}elsif($_ eq '-f'){
 		$bg = 1;
+	}elsif($_ eq '-q'){
+		$query = 1;
 	}elsif($_ eq '-s'){
-		$fast = 0;
+		$stop = 1;
 	}elsif($_ eq '--help'){
 		usage();
 	}else{
+		shift @ARGV if $_ eq '--';
 		last;
 	}
 	shift @ARGV;
@@ -36,8 +40,14 @@ sub get_playlist()
 
 sub usage()
 {
-	print STDERR "Usage: $0 [OPT] song1 [song2 [song3...]]\n";
-	print STDERR " Opt can be either -n or -f, dry/background\n";
+	my $out = <<"!";
+Usage: $0 [OPT] song1 [song2 [song3...]]
+  -n: Dry run
+  -f: Fork to background
+  -q: Query before running
+  -s: Stop playing after queue
+!
+	print STDERR $out;
 	exit 1;
 }
 
@@ -48,12 +58,15 @@ sub playing()
 
 sub mpc
 {
-	my $cmd = 'mpc ' . join(' ', @_) . ' > /dev/null';
+	my $cmd = 'mpc --wait ' . join(' ', @_) . ' > /dev/null';
 	my $ret = system $cmd;
+	die "$ret = $cmd\n" if $ret;
+}
 
-	if($ret){
-		die "$ret = $cmd\n";
-	}
+sub pwtest()
+{
+	my $ret = system "mpc consume off > /dev/null 2>&1";
+	return !!$ret;
 }
 
 sub getid($)
@@ -63,10 +76,33 @@ sub getid($)
 	for my $k (keys %playlist){
 		return $k if $playlist{$k} =~ m/$reg/i;
 	}
-	die "Couldn't find $_[0] (key)\n";
+	die "Couldn't find /$reg/ (key)\n";
 }
 
-usage() unless @ARGV;
+sub sigh()
+{
+	print "caught SIG$_[0]\n";
+	# FIXME: restore 'single' and what not?
+	exit 1;
+}
+
+sub basename($)
+{
+	return $1 if $_[0] =~ m#.*/([^/]+)$#;
+	return $_[0];
+}
+
+die "$0: need password\n" if pwtest();
+
+if(@ARGV == 0){
+	my $bnam = basename($0);
+
+	print STDERR "$bnam: reading from stdin...\n";
+	@ARGV = map { chomp; $_ } <STDIN>;
+
+	print STDERR "$bnam: assuming yes (-q)\n" if $query;
+	$query = 0;
+}
 
 get_playlist();
 
@@ -75,17 +111,19 @@ for(@ARGV){
 	print "queued \"$playlist{$id}\" ($id) for /$_/\n";
 }
 
-if(!$fast && -t STDOUT){
+if($query){
 	$| = 1;
-	print "interrupt to cancel,";
-	for($_ = 3; $_ >= 0; $_--){
-		print " $_";
-		sleep 1;
-	}
-	print "\r\e[K";
+	print "go? (Y/n) ";
+	my $in = <STDIN>;
+	exit 1 unless defined $in;
+	chomp $in;
+	exit 1 unless !length($in) || $in =~ /^y$/i;
 }
 
-exit 0 if $dry;
+if($dry){
+	print "no action taken - dry run\n";
+	exit 0;
+}
 
 if($bg){
 	my $pid = fork();
@@ -95,15 +133,27 @@ if($bg){
 		print "forked to background, pid $pid\n";
 		exit 0;
 	}
+
+	# child only
+	close STDOUT;
+	close STDERR;
+	close STDIN;
+	chdir '/';
 }
 
 for(@ARGV){
 	mpc('single on');
+	mpc('repeat off');
 	sleep 1 while playing();
 
 	my $id = getid($_);
-	print "playing $id (" . getnam($_) . ")\n";
+	print "playing $id ($playlist{$id})\n" unless $bg;
 	mpc("play $id");
 }
 
-mpc('single off');
+if($stop){
+	sleep 1 while playing();
+	mpc('stop');
+}
+mpc('single off'); # has to be after `stop`
+mpc('repeat on'); # has to be after `stop`

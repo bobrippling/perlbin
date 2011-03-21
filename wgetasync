@@ -22,7 +22,7 @@ sub adddownload($)
 	die "fork: $!\n" unless defined($pid = fork());
 
 	if($pid == 0){
-		exec "wget -q '$link'";
+		exec "wget -cq '$link'";
 		die "exec: $!\n";
 	}
 
@@ -45,20 +45,17 @@ sub waitone()
 
 	$children--;
 
-	if($?){
-		print $col{err};
-	}else{
-		print $col{status};
-	}
-
 	my $fh;
+	my $col;
 	if($?){
 		$fh = STDERR;
+		$col = $col{err};
 	}else{
 		$fh = STDOUT;
+		$col = $col{status};
 	}
 
-	print $fh "wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
+	print $fh "${col}wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
 	#$errs{$downloads{$pid}} = $? if $?;
 
 	delete $downloads{$pid};

@@ -38,7 +38,7 @@ Where OPTIONS can be either:
 -a is default
 
 Example usage:
-\$ wget -qO - http://www.path.com/to/webpage.html | $0
+\$ wget -qO- http://www.path.com/to/webpage.html | $0
 \$ $0 -a path/to/local_webpage.html -i path/to/another.html
 \$ $0 -b http://website.com/webpage.html local_file.html
 EOD
@@ -63,7 +63,7 @@ sub adddownload($)
 
 	if($pid == 0){
 		# child
-		exec "wget " . ($wget_verbose ? '' : '-q') . " '$link'";
+		exec "wget -c " . ($wget_verbose ? '' : '-q') . " '$link'";
 	}
 
 	$downloads{$pid} = $link;
@@ -108,7 +108,7 @@ sub dlimage($)
 		print "threaded, adddownload: $link\n" if $wget_verbose;
 		adddownload $link;
 	}else{
-		$ret = system("wget " . ($wget_verbose ? '' : '-q') . " '$link'");
+		$ret = system("wget -c " . ($wget_verbose ? '' : '-q') . " '$link'");
 		if($ret != 0){
 			if($ret == -1){
 				print "couldn't start wget: $!\n";
@@ -128,7 +128,7 @@ sub linkmeupscotty
 			open($fh,'<', $file) or die "$!\n";
 			$currentpage = '';
 		}else{
-			open($fh, "wget -qO - $file |") or die "$!\n";
+			open($fh, "wget -qO- '$file' |") or die "$!\n";
 			$currentpage = $file;
 		}
 
@@ -195,13 +195,13 @@ for $arg(@ARGV){
 linkmeupscotty unless $doneone;
 
 if($exec_wgetasync){
-	unless(@links){
+	if(@links == 0){
 		print STDERR "$0: nothing to do\n";
 		exit 0;
 	}
-	open XARGS, "|xargs wgetasync" or die "$0: xargs pipe: $!\n";
-	print XARGS $_, $/ for @links;
-	close XARGS;
+	open  WASYNC, "|wgetasync" or die "$0: wgetasync pipe: $!\n";
+	print WASYNC "$_\n" for @links;
+	close WASYNC;
 }elsif($threaded){
 	# collect downloads
 	my %errs;
