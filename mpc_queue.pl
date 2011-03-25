@@ -7,7 +7,7 @@ sub usage();
 my $dry   = 0;
 my $bg    = 0;
 my $query = 0;
-my $stop  = 0;
+my($stop_after, $stop_before) = 0;
 my %playlist;
 
 my @argv = @ARGV;
@@ -20,7 +20,9 @@ for(@argv){
 	}elsif($_ eq '-q'){
 		$query = 1;
 	}elsif($_ eq '-s'){
-		$stop = 1;
+		$stop_before = 1;
+	}elsif($_ eq '-S'){
+		$stop_after = 1;
 	}elsif($_ eq '--help'){
 		usage();
 	}else{
@@ -45,7 +47,8 @@ Usage: $0 [OPT] song1 [song2 [song3...]]
   -n: Dry run
   -f: Fork to background
   -q: Query before running
-  -s: Stop playing after queue
+  -s: Stop playing before queuing
+  -S: Stop playing after queue
 !
 	print STDERR $out;
 	exit 1;
@@ -141,6 +144,8 @@ if($bg){
 	chdir '/';
 }
 
+mpc('stop') if $stop_before;
+
 for(@ARGV){
 	mpc('single on');
 	mpc('repeat off');
@@ -151,9 +156,10 @@ for(@ARGV){
 	mpc("play $id");
 }
 
-if($stop){
+if($stop_after){
 	sleep 1 while playing();
 	mpc('stop');
 }
-mpc('single off'); # has to be after `stop`
-mpc('repeat on'); # has to be after `stop`
+# has to be after `stop`
+mpc('single off');
+mpc('repeat on');
