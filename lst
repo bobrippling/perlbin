@@ -15,9 +15,49 @@ sub ignore
 	}
 }
 
-sub classify($$)
+sub show($$)
 {
-	my $name = $opt{full} ? $_[0] : $_[1];
+	sub fileinfo($)
+	{
+		sub modestr($)
+		{
+			my $mode = shift;
+			$mode %= 01000;
+			sprintf '%o', $mode;
+		}
+		sub usrgrp($$)
+		{
+			my $uid = shift;
+			my $gid = shift;
+			my $name = getpwuid $uid;
+			my $grp  = getgrgid $gid;
+			return ($name ? $name : $uid) . ' ' . ($grp ? $grp : $gid);
+		}
+		sub date($)
+		{
+			use POSIX qw(strftime);
+			return strftime "%a %d %H:%M", localtime;
+		}
+		sub size($)
+		{
+			my $n = shift;
+			if($n > 1024){
+				return sprintf '%.0dKB', $n / 1024;
+			}
+			return $n . "B";
+		}
+
+		my @stat = stat $_[0];
+
+		return modestr($stat[2]) . ' ' .
+			usrgrp($stat[4], $stat[5]) . ' ' .
+		 	size($stat[7]) . ' ' .
+			date($stat[9]);
+	}
+
+	my($path, $name) = @_;
+
+	$name = $path if $opt{full};
 
 	my %class = (
 		'x' => ['*', \$col{green}   ],
@@ -27,21 +67,31 @@ sub classify($$)
 		'S' => ['=', \$col{brown}   ],
 	);
 
+
+	print INDENT x $indent;
+
+	my $shown = 0;
 	if($opt{classify}){
 		for(keys %class){
-			if(eval "-$_ '$_[0]'"){
+			if(eval "-$_ '$path'"){
 				print ${${$class{$_}}[1]},
-							INDENT x $indent,
 							$name,
 							$opt{classify} ? ${$class{$_}}[0] : '',
-							"\e[0;0m\n";
+							"\e[m";
 
-				return;
+				$shown = 1;
+				last;
 			}
 		}
 	}
 
-	print INDENT x $indent, $name, "\n";
+	print $name unless $shown;
+
+	if($opt{long}){
+		# -rw-r--r-- rob users 1143 $date
+		print "\t\e[36m", fileinfo $path, "\e[m";
+	}
+	print "\n";
 }
 
 sub lst
@@ -57,7 +107,7 @@ sub lst
 
 			unless(ignore $file){
 				if(!$hidden or $opt{all}){
-					classify($file, $_);
+					show($file, $_);
 
 					my $recurse = -d $file && $opt{recursive} && !($file =~ m#/\.\.?$#);
 
@@ -99,6 +149,7 @@ my %ls_colours = map { split /=/ } split /:/, $ENV{LS_COLORS};
 	all       => 0,
 	classify  => 0,
 	follow_ln => 0,
+	long      => 0,
 );
 
 %args = (
@@ -109,6 +160,7 @@ my %ls_colours = map { split /=/ } split /:/, $ENV{LS_COLORS};
 	'-c' => [1, \$col           ],
 	'-C' => [0, \$col           ],
 	'-L' => [1, \$opt{follow_ln}],
+	'-l' => [1, \$opt{long}     ],
 );
 
 while(@ARGV and $ARGV[0] =~ /^-/){
