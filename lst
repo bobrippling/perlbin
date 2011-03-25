@@ -47,8 +47,6 @@ sub classify($$)
 sub lst
 {
 	for my $dir (@_){
-		$dir =~ s#/$##;
-
 		opendir(my $dh, $dir) or die "opendir: $dir: $!\n";
 		my @ents = readdir $dh;
 		closedir $dh;
