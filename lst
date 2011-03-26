@@ -6,16 +6,15 @@ use constant
 	INDENT => "\t"
 };
 
-my $argv0 = $0;
+$argv0 = $0;
+@exclude = ();
+@include = ();
 
 
-sub ignore
+sub inset
 {
-	for $arg (@_){
-		for $x (@exclude){
-			return 1 if $arg =~ /$x/;
-		}
-	}
+	my $f = shift;
+	return grep { $f =~ /$_/ } @_;
 }
 
 sub show($$)
@@ -97,6 +96,17 @@ sub show($$)
 	print "\n";
 }
 
+sub canshow
+{
+	my $f = shift;
+
+	if(@include){
+		return inset($f, @include) and not inset($f, @exclude);
+	}else{
+		return not inset($f, @exclude);
+	}
+}
+
 sub lst
 {
 	for my $dir (@_){
@@ -105,10 +115,12 @@ sub lst
 		closedir $dh;
 
 		for(@ents){
+			next if $_ eq '.' or $_ eq '..';
+
 			my $hidden = m#^\.#;
 			my $file = "$dir/$_";
 
-			unless(ignore $file){
+			if(canshow($file)){
 				if(!$hidden or $opt{all}){
 					show($file, $_);
 
@@ -133,7 +145,6 @@ sub lst
 	}
 }
 
-@exclude = ();
 $indent  = 0;
 $col     = -t STDOUT;
 
@@ -174,8 +185,14 @@ while(@ARGV and $ARGV[0] =~ /^-/){
 		last;
 	}elsif(my $ref = $args{$ARGV[0]}){
 		${${$ref}[1]} = ${$ref}[0];
-	}elsif($ARGV[0] =~ /^-x(.+)$/){
-		push @exclude, $1;
+
+	}elsif($ARGV[0] =~ /^-(x)(.+)$/i){
+		if($1 eq 'x'){
+			push @exclude, $2;
+		}else{
+			push @include, $2;
+		}
+
 	}elsif($ARGV[0] eq '--help'){
 		print "Usage: $0 [-a] [-R] [-f] [-xREGEX]...\n";
 		print "  -a: All files\n";
