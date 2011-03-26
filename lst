@@ -6,6 +6,9 @@ use constant
 	INDENT => "\t"
 };
 
+my $argv0 = $0;
+
+
 sub ignore
 {
 	for $arg (@_){
@@ -97,7 +100,7 @@ sub show($$)
 sub lst
 {
 	for my $dir (@_){
-		opendir(my $dh, $dir) or die "opendir: $dir: $!\n";
+		opendir(my $dh, $dir) or do{ warn "$argv0: opendir: $dir: $!\n"; next; };
 		my @ents = readdir $dh;
 		closedir $dh;
 
@@ -133,6 +136,8 @@ sub lst
 @exclude = ();
 $indent  = 0;
 $col     = -t STDOUT;
+
+$argv0 = $1 if $argv0 =~ m#.*/([^/]+$)#;
 
 my %ls_colours = map { split /=/ } split /:/, $ENV{LS_COLORS};
 %col = (
