@@ -139,7 +139,7 @@ $col     = -t STDOUT;
 
 $argv0 = $1 if $argv0 =~ m#.*/([^/]+$)#;
 
-my %ls_colours = map { split /=/ } split /:/, $ENV{LS_COLORS};
+my %ls_colours = map { split /=/ } split /:/, ($ENV{LS_COLORS} or '');
 %col = (
 	green   => "\e[" . ($ls_colours{ex} or "1;32") . 'm',
 	blue    => "\e[" . ($ls_colours{di} or "0;34") . 'm',
