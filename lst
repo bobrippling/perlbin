@@ -172,6 +172,7 @@ my %ls_colours = map { split /=/ } split /:/, ($ENV{LS_COLORS} or '');
 	'-d' => [0, \$opt{recursive}],
 	'-f' => [1, \$opt{full}     ],
 	'-a' => [1, \$opt{all}      ],
+	'-A' => [1, \$opt{all}      ], # for ls compat
 	'-F' => [1, \$opt{classify} ],
 	'-c' => [1, \$col           ],
 	'-C' => [0, \$col           ],
