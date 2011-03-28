@@ -7,12 +7,15 @@ use constant {
 
 our %downloads; # Map<PID, Link>
 our %downloads_rev; # reverse of above, for lookup
+our %history;
 our $children = 0;
 my  $doneone = 0;
 
 sub adddownload($)
 {
 	$link = $_[0];
+
+	return if $history{$link};
 
 	while($children >= MAX_CHILD){
 		print STDERR "reached child limit of $children, waiting...\n";
@@ -29,6 +32,7 @@ sub adddownload($)
 	$children++;
 	$downloads{$pid} = $link;
 	$downloads_rev{$link} = $pid;
+	$history{$link} = 1;
 }
 
 sub waitone()
