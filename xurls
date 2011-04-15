@@ -97,13 +97,13 @@ if(!$opt{colour} || ($opt{colour} == 1 && !-t STDOUT)){
 	$col{$_} = '' for keys %col;
 }
 
-if(!@files){
-	scan(undef, $., $_) while <STDIN>;
-}else{
-	for $f (@files){
-		$n = 1;
-		open F, '<', $f or die "$f: $!\n";
+if(@files){
+	for my $f (@files){
+		my $n = 1;
+		open F, '<', $f or warn "$f: $!\n";
 		scan($f, $n++, $_) for <F>;
 		close F;
 	}
+}else{
+	scan(undef, $., $_) while <STDIN>;
 }
