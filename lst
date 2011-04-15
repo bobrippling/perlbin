@@ -70,6 +70,13 @@ sub show($$)
 			date($stat[9]);
 	}
 
+	sub escape_quote($)
+	{
+		my $s = shift;
+		s#"#\\"#g;
+		$s;
+	}
+
 	my($path, $name) = @_;
 
 	$name = $path if $opt{full};
@@ -88,7 +95,7 @@ sub show($$)
 	my $shown = 0;
 	if($opt{classify}){
 		for(keys %class){
-			if(eval "-$_ '$path'"){
+			if(eval "-$_ \"" . escape_quote($path) . '"'){
 				print ${${$class{$_}}[1]},
 							$name,
 							$opt{classify} ? ${$class{$_}}[0] : '',
