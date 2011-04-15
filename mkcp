@@ -38,7 +38,7 @@ sub mkdir_p($)
 			if($debug){
 				print "mkdir '$_'\n";
 			}else{
-				mkdir $_ or die "mkdir $_: $!\n";
+				mkdir $_ or die "$0: mkdir \"$_\": $!\n";
 			}
 		}
 	}
