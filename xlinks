@@ -2,28 +2,25 @@
 
 sub scan($)
 {
-	local $_ = $_[0];
+	local $_ = shift;
 	print $4 while(s/<(img|a) [^>]*(href|src)=(["'])([^"']+)\3[^>]*>//i);
 }
 
-die "Usage: $0 [--help] [FILES...]\n" if $ARGV[0] eq '--help';
-
 $\ = "\n";
-$doneone = 0;
 
-for $arg (@ARGV){
-	if(-f $arg){
-		$f = "< $arg";
-	}else{
-		$f = "wget -qO- $arg |";
+if(@ARGV){
+	for my $arg (@ARGV){
+		my $f;
+		if(-f $arg){
+			$f = "< $arg";
+		}else{
+			$f = "wget -qO- $arg |";
+		}
+
+		open F, $f or die "open $f\n";
+		scan $_ for <F>;
+		close F;
 	}
-
-	open F, $f or die "open $f\n";
-	scan $_ for <F>;
-	close F;
-	$doneone = 1;
-}
-
-if(!$doneone){
-	scan $_ while(<STDIN>);
+}else{
+	scan $_ while <STDIN>;
 }
