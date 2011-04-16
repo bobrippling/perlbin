@@ -145,8 +145,8 @@ sub lst
 		my @ents = readdir $dh;
 		closedir $dh;
 
-		for(@ents){
-			next if $_ eq '.' or $_ eq '..';
+		for($opt{sort} ? sort @ents : @ents){
+			next if /^\.\.?$/;
 
 			my $hidden = m#^\.#;
 			my $file = "$dir/$_";
@@ -199,6 +199,7 @@ my %ls_colours = map { split /=/ } split /:/, ($ENV{LS_COLORS} or '');
 	follow_ln => 0,
 	long      => 0,
 	symlinks  => 0,
+	sort      => 0,
 );
 
 %args = (
@@ -212,6 +213,7 @@ my %ls_colours = map { split /=/ } split /:/, ($ENV{LS_COLORS} or '');
 	'-L' => [1, \$opt{follow_ln}],
 	'-l' => [1, \$opt{long}     ],
 	'-L' => [1, \$opt{symlinks} ],
+	'-s' => [1, \$opt{sort}     ],
 );
 
 
@@ -238,6 +240,7 @@ while(@ARGV and $ARGV[0] =~ /^-/){
 		print "  -L: Follow symbolic links\n";
 		print "  -C: No colour (-c to force colour)\n";
 		print "  -x: Exclude files matching REGEX\n";
+		print "  -s: Sort by name\n";
 		exit 1;
 	}else{
 		last;
