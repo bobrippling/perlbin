@@ -9,7 +9,7 @@ use constant
 $argv0 = $0;
 @exclude = ();
 @include = ();
-
+$depth_lim = -1;
 
 sub inset
 {
@@ -140,6 +140,10 @@ sub canshow
 
 sub lst
 {
+	my $depth = shift;
+
+	return if $depth_lim != -1 and ++$depth > $depth_lim;
+
 	for my $dir (@_){
 		opendir(my $dh, $dir) or do{ warn "$argv0: opendir: $dir: $!\n"; next; };
 		my @ents = readdir $dh;
@@ -167,7 +171,7 @@ sub lst
 
 					if($recurse){
 						$indent++;
-						lst($file);
+						lst($depth, $file);
 						$indent--;
 					}
 				}
@@ -231,16 +235,23 @@ while(@ARGV and $ARGV[0] =~ /^-/){
 			push @include, $2;
 		}
 
+	}elsif($ARGV[0] =~ /^-m([0-9]+)$/){
+		$depth_lim = $1;
+
 	}elsif($ARGV[0] eq '--help'){
-		print "Usage: $0 [-a] [-R] [-f] [-xREGEX]...\n";
-		print "  -a: All files\n";
-		print "  -d: Don't recurse\n";
-		print "  -f: Show full paths\n";
-		print "  -F: Classify with */=>@|\n";
-		print "  -L: Follow symbolic links\n";
-		print "  -C: No colour (-c to force colour)\n";
-		print "  -x: Exclude files matching REGEX\n";
-		print "  -s: Sort by name\n";
+		my $s = <<"!";
+Usage: $0 [OPTS] [FILES...]
+  -a: All files
+  -d: Don't recurse
+  -f: Show full paths
+  -F: Classify with */=>@|
+  -L: Follow symbolic links
+  -C: No colour (-c to force colour)
+  -x: Exclude files matching REGEX
+  -s: Sort by name
+  -m: Max depth
+!
+		print STDERR $s;
 		exit 1;
 	}else{
 		last;
@@ -255,4 +266,4 @@ if(!$col){
 
 $ARGV[0] = '.' unless @ARGV;
 
-lst @ARGV;
+lst 0, @ARGV;
