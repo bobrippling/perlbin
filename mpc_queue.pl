@@ -34,7 +34,7 @@ for(@argv){
 
 sub get_playlist()
 {
-	for(map { chomp; $_ } `mpc_choose.sh ls`){
+	for(map { chomp; $_ } `mpc playlist | nl`){
 		die "couldn't parse \"$_\"\n" unless /^\s+([0-9]+)\s+(.*)$/;
 		$playlist{$1} = $2;
 	}
