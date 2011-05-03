@@ -10,6 +10,7 @@ $argv0 = $0;
 @exclude = ();
 @include = ();
 $depth_lim = -1;
+$exit_code = 0;
 
 sub inset
 {
@@ -145,7 +146,7 @@ sub lst
 	return if $depth_lim != -1 and ++$depth > $depth_lim;
 
 	for my $dir (@_){
-		opendir(my $dh, $dir) or do{ warn "$argv0: opendir: $dir: $!\n"; next; };
+		opendir(my $dh, $dir) or do{ warn "$argv0: opendir: $dir: $!\n"; $exit_code = 1; next; };
 		my @ents = readdir $dh;
 		closedir $dh;
 
@@ -266,4 +267,6 @@ if(!$col){
 
 $ARGV[0] = '.' unless @ARGV;
 
-lst 0, @ARGV;
+lst 0, map { s,/$,, unless length == 1; $_ } @ARGV;
+
+exit $exit_code;
