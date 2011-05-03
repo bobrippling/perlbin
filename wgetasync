@@ -10,6 +10,8 @@ our %downloads_rev; # reverse of above, for lookup
 our %history;
 our $children = 0;
 my  $doneone = 0;
+my  @wget_args;
+our $verbose = 0;
 
 sub adddownload($)
 {
@@ -25,7 +27,7 @@ sub adddownload($)
 	die "fork: $!\n" unless defined($pid = fork());
 
 	if($pid == 0){
-		exec "wget -cq '$link'";
+		exec "wget @wget_args -cq '$link'";
 		die "exec: $!\n";
 	}
 
@@ -59,7 +61,8 @@ sub waitone()
 		$col = $col{status};
 	}
 
-	print $fh "${col}wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
+	print $fh "${col}wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n"
+		unless $quiet;
 	#$errs{$downloads{$pid}} = $? if $?;
 
 	delete $downloads{$pid};
@@ -76,11 +79,23 @@ unless(-t STDOUT){
 	$col{$_} = '' for keys %col;
 }
 
-for(@ARGV){
+while(1){
+	$_ = shift;
+	last unless defined;
+
 	if($_ eq '--help'){
+		usage:
 		print "Usage: $0 [links...]\n";
 		print "If no links are given, they are read on stdin\n";
 		exit 1;
+	}elsif($_ eq '--args'){
+		$_ = shift;
+		goto usage unless defined;
+		push @wget_args,  $_;
+		next;
+	}elsif($_ eq '-q'){
+		$quiet = 1;
+		next;
 	}
 
 	adddownload $_;
