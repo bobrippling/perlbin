@@ -2,7 +2,7 @@
 use warnings;
 
 use constant {
-	MAX_CHILD => 150
+	MAX_CHILD => 10
 };
 
 our %downloads; # Map<PID, Link>
@@ -20,7 +20,7 @@ sub adddownload($)
 	return if $history{$link};
 
 	while($children >= MAX_CHILD){
-		print STDERR "reached child limit of $children, waiting...\n";
+		print STDERR "reached limit ($children), waiting...\r";
 		waitone();
 	}
 
