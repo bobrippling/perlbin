@@ -100,7 +100,7 @@ sub show($$)
 				print ${${$class{$_}}[1]},
 							$name,
 							$opt{classify} ? ${$class{$_}}[0] : '',
-							"\e[m";
+							$col{off};
 
 				$shown = 1;
 				last;
@@ -112,7 +112,7 @@ sub show($$)
 
 	if($opt{long}){
 		# -rw-r--r-- rob users 1143 $date
-		print "\t\e[36m", fileinfo $path, "\e[m";
+		print "\t$col{info}", fileinfo $path, $col{off};
 	}elsif($opt{symlinks} and my $target = readlink $path){
 		my $exists;
 		if($opt{classify}){
@@ -123,7 +123,7 @@ sub show($$)
 
 		print $col{red} unless $exists;
 		print " -> $target";
-		print "\e[m"    unless $exists;
+		print $col{off} unless $exists;
 	}
 	print "\n";
 }
@@ -194,6 +194,8 @@ my %ls_colours = map { split /=/ } split /:/, ($ENV{LS_COLORS} or '');
 	purple  => "\e[" . ($ls_colours{pi} or "0;35") . 'm',
 	brown   => "\e[" . ($ls_colours{so} or "0;33") . 'm',
 	red     => "\e[" . (                   "0;31") . 'm',
+	info    => "\e[" .                             '36m',
+	off     => "\e["                               . 'm',
 );
 
 %opt = (
