@@ -1,10 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 
-use constant {
-	MAX_CHILD => 10
-};
-
+my $MAX_CHILD = 10;
 our %downloads; # Map<PID, Link>
 our %downloads_rev; # reverse of above, for lookup
 our %history;
@@ -12,6 +9,7 @@ our $children = 0;
 my  $doneone = 0;
 my  @wget_args;
 our $verbose = 0;
+my $wget_bin = "wget";
 
 sub adddownload($)
 {
@@ -19,7 +17,7 @@ sub adddownload($)
 
 	return if $history{$link};
 
-	while($children >= MAX_CHILD){
+	while($children >= $MAX_CHILD){
 		print STDERR "reached limit ($children), waiting...\r";
 		waitone();
 	}
@@ -27,7 +25,7 @@ sub adddownload($)
 	die "fork: $!\n" unless defined($pid = fork());
 
 	if($pid == 0){
-		exec "wget @wget_args -cq '$link'";
+		exec "$wget_bin @wget_args -cq '$link'";
 		die "exec: $!\n";
 	}
 
@@ -79,20 +77,32 @@ unless(-t STDOUT){
 	$col{$_} = '' for keys %col;
 }
 
+sub usage(){
+	my $u = <<"!";
+Usage: $0 [OPTS] [links...]
+If no links are given, they are read on stdin
+
+--args x: Add 'x' to wget arguments
+-q:       No output
+-l x:     Set max-children to x
+!
+
+	print $u;
+
+	exit 1;
+}
+
 while(1){
 	$_ = shift;
 	last unless defined;
 
 	if($_ eq '--help'){
-		usage:
-		print "Usage: $0 [links...]\n";
-		print "If no links are given, they are read on stdin\n";
-		exit 1;
+		usage();
 	}elsif($_ eq '--args'){
-		$_ = shift;
-		goto usage unless defined;
-		push @wget_args,  $_;
+		push @wget_args,  shift || usage();
 		next;
+	}elsif($_ eq '-l'){
+		$MAX_CHILD = shift || usage();
 	}elsif($_ eq '-q'){
 		$quiet = 1;
 		next;
