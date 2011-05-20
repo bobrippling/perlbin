@@ -73,9 +73,9 @@ sub show($$)
 
 	sub escape_quote($)
 	{
-		my $s = shift;
-		s#"#\\"#g;
-		$s;
+		local $_ = shift;
+		s#[@"\$]#\\$&#g;
+		$_;
 	}
 
 	my($path, $name) = @_;
