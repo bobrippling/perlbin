@@ -3,9 +3,19 @@ use warnings;
 
 sub usage()
 {
-	print "Usage: $0 [-v] [grep_args] -- [files]\n";
-	print " -v: verbose\n";
+	my $s = <<"!";
+Usage: $0 [-v] [grep_args] -- [files]
+ -v: verbose
+!
+	print STDERR $s;
 	exit 1;
+}
+
+sub escape($)
+{
+	my $s = shift;
+	$s =~ s/"/\\"/g;
+	return $s;
 }
 
 my $verbose = 0;
@@ -31,15 +41,21 @@ $nocol = "\033[0;00m";
 
 open STDOUT, '| uniq';
 
-for $f (@files){
-	my $cmd = "pdftotext '$f' - 2>/dev/null | grep --color=always " .
+my $found = 0;
+
+for $f (@files){ # TODO: sort files
+	my $cmd = "pdftotext \"" . escape($f) . "\" - 2>/dev/null | grep --color=always " .
 		join(' ', map { "'$_'" } @gargs) . ' 2>/dev/null';
 
 	for(my @out = `$cmd`){
+		$found = 1;
 		if($verbose){
 			print "$red$f$nocol: " . join(' ', @out);
 		}else{
-			print "$f\n"
+			print "$f\n";
+			last;
 		}
 	}
 }
+
+exit !$found;
