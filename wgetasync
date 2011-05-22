@@ -9,6 +9,7 @@ our $children = 0;
 my  $doneone = 0;
 my  @wget_args;
 our $verbose = 0;
+our $dups = 0;
 my $wget_bin = "wget";
 
 sub adddownload($)
@@ -25,14 +26,15 @@ sub adddownload($)
 	die "fork: $!\n" unless defined($pid = fork());
 
 	if($pid == 0){
-		exec "$wget_bin @wget_args -cq '$link'";
+		exec "$wget_bin @wget_args -q '$link'";
 		die "exec: $!\n";
 	}
 
 	$children++;
 	$downloads{$pid} = $link;
 	$downloads_rev{$link} = $pid;
-	$history{$link} = 1;
+
+	$history{$link} = 1 unless $dups;
 }
 
 sub waitone()
@@ -85,6 +87,7 @@ If no links are given, they are read on stdin
 --args x: Add 'x' to wget arguments
 -q:       No output
 -l x:     Set max-children to x
+-d:       Don't filter out duplicates
 !
 
 	print $u;
@@ -105,6 +108,9 @@ while(1){
 		$MAX_CHILD = shift || usage();
 	}elsif($_ eq '-q'){
 		$quiet = 1;
+		next;
+	}elsif($_ eq '-d'){
+		$dups = 1;
 		next;
 	}
 
