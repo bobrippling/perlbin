@@ -1,9 +1,29 @@
 #!/usr/bin/perl
 
+our $base;
+
+sub link_absolute($)
+{
+	local $_ = shift;
+
+	return 1 if /^\//;
+	return 1 if m#^[a-z]+://#;
+	return 0;
+}
+
 sub scan($)
 {
 	local $_ = shift;
-	print $4 while(s/<(img|a) [^>]*(href|src)=(["'])([^"']+)\3[^>]*>//i);
+
+	$base = $1 if s#<base +href=["']([^"']+)['"]##;
+
+	while(s/<(img|a) [^>]*(href|src)=(["'])([^"']+)\3[^>]*>//i){
+		my $l = $4;
+		if(!link_absolute($l)){
+			$l = "$base/$l";
+		}
+		print $l;
+	}
 }
 
 $\ = "\n";
@@ -15,6 +35,7 @@ if(@ARGV){
 			$f = "< $arg";
 		}else{
 			$f = "wget -qO- $arg |";
+			$base = $arg;
 		}
 
 		open F, $f or die "open $f\n";
