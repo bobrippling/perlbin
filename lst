@@ -23,11 +23,11 @@ sub link_exists($$)
 	my ($path, $target) = @_;
 
 	if(substr($target, 0, 1) eq '/'){
-		return (-f $target) ? 1 : 0;
+		return (-e $target) ? 1 : 0;
 	}else{
 		my $dir = $path;
 		$dir =~ s#/[^/]+$##;
-		return (-f "$dir/$target") ? 1 : 0;
+		return (-e "$dir/$target") ? 1 : 0;
 	}
 }
 
@@ -58,7 +58,7 @@ sub show($$)
 		{
 			my $n = shift;
 			if($n > 1024){
-				return sprintf '%.0dKB', $n / 1024;
+				return sprintf '%3.0dKB', $n / 1024;
 			}
 			return $n . "B";
 		}
@@ -66,9 +66,9 @@ sub show($$)
 		my @stat = stat $_[0];
 
 		return modestr($stat[2]) . ' ' .
-			usrgrp($stat[4], $stat[5]) . ' ' .
-		 	size($stat[7]) . ' ' .
-			date($stat[9]);
+			usrgrp($stat[4], $stat[5]); # . ' ' .
+			#size($stat[7]); # . ' ' .
+			#date($stat[9]);
 	}
 
 	sub escape_quote($)
@@ -91,6 +91,10 @@ sub show($$)
 	);
 
 
+	if($opt{long}){
+		# -rw-r--r-- rob users 1143 $date
+		print "$col{info}", fileinfo $path, "\t", $col{off};
+	}
 	print INDENT x $indent;
 
 	my $shown = 0;
@@ -110,10 +114,7 @@ sub show($$)
 
 	print $name unless $shown;
 
-	if($opt{long}){
-		# -rw-r--r-- rob users 1143 $date
-		print "\t$col{info}", fileinfo $path, $col{off};
-	}elsif($opt{symlinks} and my $target = readlink $path){
+	if($opt{symlinks} and my $target = readlink $path){
 		my $exists;
 		if($opt{classify}){
 			$exists = link_exists($path, $target);
@@ -121,9 +122,9 @@ sub show($$)
 			$exists = 1;
 		}
 
-		print $col{red} unless $exists;
+		print $exists ? $col{blue} : $col{red};
 		print " -> $target";
-		print $col{off} unless $exists;
+		print $col{off};
 	}
 	print "\n";
 }
