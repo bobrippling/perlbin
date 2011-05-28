@@ -34,7 +34,7 @@ for my $i (0 .. $#ARGV){
 usage if $pivot == -1;
 
 my @gargs = @ARGV[0 .. $pivot - 1];
-my @files = @ARGV[$pivot + 1 .. $#ARGV];
+my @files = sort @ARGV[$pivot + 1 .. $#ARGV];
 
 $red   = "\033[0;35m";
 $nocol = "\033[0;00m";
@@ -43,7 +43,7 @@ open STDOUT, '| uniq';
 
 my $found = 0;
 
-for $f (@files){ # TODO: sort files
+for $f (@files){
 	my $cmd = "pdftotext \"" . escape($f) . "\" - 2>/dev/null | grep --color=always " .
 		join(' ', map { "'$_'" } @gargs) . ' 2>/dev/null';
 
