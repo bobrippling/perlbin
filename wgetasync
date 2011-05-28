@@ -12,11 +12,18 @@ our $verbose = 0;
 our $dups = 0;
 my $wget_bin = "wget";
 
+sub basename($)
+{
+	my $_ = shift;
+	return $1 if m#/([^/]+$)#;
+	return $_;
+}
+
 sub adddownload($)
 {
-	$link = $_[0];
+	my $link = shift;
 
-	return if $history{$link};
+	return if $history{$link} or -e basename($link);
 
 	while($children >= $MAX_CHILD){
 		print STDERR "reached limit ($children), waiting...\r";
@@ -119,7 +126,7 @@ while(1){
 }
 
 if(!$doneone){
-	while(<STDIN>){
+	while(<>){
 		chomp;
 		adddownload $_;
 	}
