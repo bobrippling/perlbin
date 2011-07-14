@@ -34,6 +34,7 @@ sub st($)
 {
 	my %m = (
 		 1 => 'time_wait',
+		 2 => 'connecting',
 		 6 => 'connected',
 		10 => 'listening',
 	);

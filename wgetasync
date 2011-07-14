@@ -8,9 +8,10 @@ our %history;
 our $children = 0;
 my  $doneone = 0;
 my  @wget_args;
-our $verbose = 0;
 our $dups = 0;
 my $wget_bin = "wget";
+my $dir = '.';
+my $verbose = 0;
 
 sub basename($)
 {
@@ -33,7 +34,16 @@ sub adddownload($)
 	die "fork: $!\n" unless defined($pid = fork());
 
 	if($pid == 0){
-		exec "$wget_bin @wget_args -q '$link'";
+		my @cmd = (
+			$wget_bin,
+			@wget_args,
+			$verbose ? '' : '-q',
+			$link
+		);
+
+		chdir $dir || warn "chdir $dir: $!\n";
+		print STDERR "exec: @cmd\n" if $verbose;
+		exec @cmd;
 		die "exec: $!\n";
 	}
 
@@ -51,8 +61,8 @@ sub waitone()
 
 	if($pid == -1){
 		# should never get here
-		print "$col{err}wait() returned -1, still have children...?:$col{off}\n";
-		print "pid: $_, link: $downloads{$_}\n" for keys %downloads;
+		print STDERR "$col{err}wait() returned -1, still have children...?:$col{off}\n";
+		print STDERR "pid: $_, link: $downloads{$_}\n" for keys %downloads;
 		exit 1;
 	}
 
@@ -68,8 +78,7 @@ sub waitone()
 		$col = $col{status};
 	}
 
-	print $fh "${col}wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n"
-		unless $quiet;
+	print $fh "${col}wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
 	#$errs{$downloads{$pid}} = $? if $?;
 
 	delete $downloads{$pid};
@@ -91,10 +100,11 @@ sub usage(){
 Usage: $0 [OPTS] [links...]
 If no links are given, they are read on stdin
 
---args x: Add 'x' to wget arguments
--q:       No output
--l x:     Set max-children to x
--d:       Don't filter out duplicates
+-w x: Add 'x' to wget arguments
+-m x: Set max-children to x
+-d:   Don't filter out duplicates
+-O x: Output to directory x
+-v:   Verbose (show wget output)
 !
 
 	print $u;
@@ -108,16 +118,20 @@ while(1){
 
 	if($_ eq '--help'){
 		usage();
-	}elsif($_ eq '--args'){
+	}elsif($_ eq '-w'){
 		push @wget_args,  shift || usage();
 		next;
-	}elsif($_ eq '-l'){
+	}elsif($_ eq '-m'){
 		$MAX_CHILD = shift || usage();
-	}elsif($_ eq '-q'){
-		$quiet = 1;
-		next;
 	}elsif($_ eq '-d'){
 		$dups = 1;
+		next;
+	}elsif($_ eq '-O'){
+		$dir = shift || usage();
+		mkdir $dir if not -d $dir;
+		next;
+	}elsif($_ eq '-v'){
+		$verbose = 1;
 		next;
 	}
 
@@ -136,6 +150,6 @@ if(!$doneone){
 waitone() while keys %downloads;
 
 #if(keys %errs){
-	# TODO: retry option
+	# TODO: retry option?
 	#print STDERR "error $col{err}$errs{$_}$col{off} for $_\n" for keys %errs;
 #}

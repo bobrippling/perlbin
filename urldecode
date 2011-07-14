@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 use warnings;
 
+my $full = 0;
+
 sub usage()
 {
 	print "Usage: $0 [files_to_rename]\n";
@@ -36,7 +38,7 @@ sub encode($)
 	my $ret = '';
 
 	for(split //){
-		if(/[a-zA-Z0-9_\.-]/ || $_ eq "\n"){
+		if(/[a-zA-Z0-9_\.-]/ || (!$full && $_ eq "\n")){
 			$ret .= $_;
 		}else{
 			$ret .= '%' . sprintf '%x', ord;
@@ -58,5 +60,10 @@ if($basename eq 'urlencode'){
 }
 
 binmode STDIN;
+
+if(@ARGV > 0 && $ARGV[0] eq '-f'){
+	$full = 1;
+	shift @ARGV;
+}
 
 print $f->($_) while <>;
