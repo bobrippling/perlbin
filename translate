@@ -1,0 +1,152 @@
+#!/usr/bin/perl
+use warnings;
+use locale;
+
+use POSIX qw(locale_h);
+
+setlocale(LC_CTYPE, "");
+
+my %langs = (
+	af => Afrikaans,
+	ar => Arabic,
+	az => Azerbaijani,
+	be => Belarusian,
+	bg => Bulgarian,
+	bn => Bengali,
+	ca => Catalan,
+	#CN => Chinese,
+	cs => Czech,
+	cy => Welsh,
+	da => Danish,
+	de => German,
+	el => Greek,
+	en => English,
+	es => Spanish,
+	et => Estonian,
+	eu => Basque,
+	fa => Persian,
+	fi => Finnish,
+	fr => French,
+	ga => Irish,
+	gl => Galician,
+	gu => Gujarati,
+	hi => Hindi,
+	hr => Croatian,
+	ht => Haitian,
+	hu => Hungarian,
+	hy => Armenian,
+	id => Indonesian,
+	is => Icelandic,
+	it => Italian,
+	iw => Hebrew,
+	ja => Japanese,
+	ka => Georgian,
+	kn => Kannada,
+	ko => Korean,
+	la => Latin,
+	lt => Lithuanian,
+	lv => Latvian,
+	mk => Macedonian,
+	ms => Malay,
+	mt => Maltese,
+	nl => Dutch,
+	no => Norwegian,
+	pl => Polish,
+	pt => Portuguese,
+	ro => Romanian,
+	ru => Russian,
+	sk => Slovak,
+	sl => Slovenian,
+	sq => Albanian,
+	sr => Serbian,
+	sv => Swedish,
+	sw => Swahili,
+	ta => Tamil,
+	te => Telugu,
+	th => Thai,
+	tl => Filipino,
+	tr => Turkish,
+	#TW => Chinese,
+	uk => Ukrainian,
+	ur => Urdu,
+	vi => Vietnamese,
+	yi => Yiddish,
+);
+
+sub usage()
+{
+	print STDERR "Usage: $0 [to-langauge=en]\n";
+	exit 1;
+}
+
+use IO::Socket;
+
+my $to_lang = 'en';
+my $from_lang = 'auto';
+
+if(@ARGV){
+	if(@ARGV == 1){
+		if($langs{$ARGV[0]}){
+			$to_lang = $ARGV[0];
+		}else{
+			print STDERR "no such language \"$ARGV[0]\", languages:\n";
+			print STDERR "$_ - $langs{$_}\n" for sort keys %langs;
+			usage();
+		}
+	}else{
+		usage();
+	}
+}
+
+my $translate_me = `urlencode`;
+chomp $translate_me;
+
+my $sock = new IO::Socket::INET(
+	PeerAddr  => 'translate.google.com',
+	PeerPort  => 80,
+	Proto     => 'tcp'
+);
+
+my %args = (
+	client     => 't',
+	text       => $translate_me,
+	hl         => "en",
+	sl         => $from_lang,
+	tl         => $to_lang,
+	multires   => "1",
+	otf        => "1",
+	ssel       => "0", # selection?
+	tsel       => "0", # ditto
+	uptl       => $to_lang,
+	alttl      => "es", # alternate to_lang?
+	sc         => "1",
+);
+
+my $args = join '&', map { "$_=$args{$_}" } keys %args;
+
+print $sock <<"!";
+GET /translate_a/t?$args HTTP/1.1\r
+Host: translate.google.com\r
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0\r
+Connection: close\r
+\r
+!
+
+while(<$sock>){
+	s/\r//;
+	chomp;
+
+	last unless length;
+
+	if(/^HTTP\/1\.[01] ([0-9]+) (.*)$/){
+		warn "Warning: HTTP $1 ($2)\n" if $1 != 200;
+	}
+}
+
+my $json;
+
+$json .= $_ while <$sock>;
+close $sock;
+
+$json =~ /^[^"]+"([^"]+)"/;
+print $1, "\n";
