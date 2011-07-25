@@ -268,8 +268,13 @@ if(!$col){
 	$col{$_} = '' for keys %col;
 }
 
-$ARGV[0] = '.' unless @ARGV;
+unshift @ARGV, '.' unless @ARGV;
 
-lst 0, map { s,/$,, unless length == 1; $_ } @ARGV;
+my $pre = '';
+for(map { s,/$,, unless length == 1; $_ } @ARGV){
+	print "$pre$_:\n";
+	lst 0, $_;
+	$pre = "\n";
+}
 
 exit $exit_code;
