@@ -12,7 +12,7 @@ $argv0 = $0;
 $depth_lim = -1;
 $exit_code = 0;
 
-sub inset
+sub in_set
 {
 	my $f = shift;
 	return grep { $f =~ /$_/ } @_;
@@ -38,8 +38,26 @@ sub show($$)
 		sub modestr($)
 		{
 			my $mode = shift;
-			$mode %= 01000;
-			sprintf '%o', $mode;
+
+			if($opt{symbolic}){
+				my $ret = "----------";
+
+				substr($ret, 1, 1) = 'r' if $mode & 0400;
+				substr($ret, 2, 1) = 'w' if $mode & 0200;
+				substr($ret, 3, 1) = 'x' if $mode & 0100;
+
+				substr($ret, 4, 1) = 'r' if $mode & 040;
+				substr($ret, 5, 1) = 'w' if $mode & 020;
+				substr($ret, 6, 1) = 'x' if $mode & 010;
+
+				substr($ret, 7, 1) = 'r' if $mode & 04;
+				substr($ret, 8, 1) = 'w' if $mode & 02;
+				substr($ret, 9, 1) = 'x' if $mode & 01;
+
+				$ret;
+			}else{
+				sprintf '%03o', $mode;
+			}
 		}
 		sub usrgrp($$)
 		{
@@ -65,7 +83,7 @@ sub show($$)
 
 		my @stat = stat $_[0];
 
-		return modestr($stat[2]) . ' ' .
+		return modestr($stat[2] & 07777) . ' ' .
 			usrgrp($stat[4], $stat[5]); # . ' ' .
 			#size($stat[7]); # . ' ' .
 			#date($stat[9]);
@@ -134,9 +152,9 @@ sub canshow
 	my $f = shift;
 
 	if(@include){
-		return inset($f, @include) and not inset($f, @exclude);
+		return in_set($f, @include) and not in_set($f, @exclude);
 	}else{
-		return not inset($f, @exclude);
+		return not in_set($f, @exclude);
 	}
 }
 
@@ -161,7 +179,7 @@ sub lst
 				if(!$hidden or $opt{all}){
 					show($file, $_);
 
-					my $recurse = -d $file && $opt{recursive} && !($file =~ m#/\.\.?$#);
+					my $recurse = -d $file && !($file =~ m#/\.\.?$#);
 
 					if($recurse and -l $file){
 						if($opt{follow_ln}){
@@ -200,7 +218,6 @@ my %ls_colours = map { split /=/ } split /:/, ($ENV{LS_COLORS} or '');
 );
 
 %opt = (
-	recursive => 1,
 	full      => 0,
 	all       => 0,
 	classify  => 0,
@@ -208,10 +225,10 @@ my %ls_colours = map { split /=/ } split /:/, ($ENV{LS_COLORS} or '');
 	long      => 0,
 	symlinks  => 0,
 	sort      => 0,
+	symbolic  => 0,
 );
 
 %args = (
-	'-d' => [0, \$opt{recursive}],
 	'-f' => [1, \$opt{full}     ],
 	'-a' => [1, \$opt{all}      ],
 	'-A' => [1, \$opt{all}      ], # for ls compat
@@ -222,6 +239,7 @@ my %ls_colours = map { split /=/ } split /:/, ($ENV{LS_COLORS} or '');
 	'-l' => [1, \$opt{long}     ],
 	'-L' => [1, \$opt{symlinks} ],
 	'-s' => [1, \$opt{sort}     ],
+	'-p' => [1, \$opt{symbolic} ],
 );
 
 
@@ -246,14 +264,15 @@ while(@ARGV and $ARGV[0] =~ /^-/){
 		my $s = <<"!";
 Usage: $0 [OPTS] [FILES...]
   -a: All files
-  -d: Don't recurse
   -f: Show full paths
   -F: Classify with */=>@|
   -L: Follow symbolic links
+  -l: Show permissions and ownership
   -C: No colour (-c to force colour)
   -x: Exclude files matching REGEX
   -s: Sort by name
   -m: Max depth
+  -p: Symbolic permissions (with -l)
 !
 		print STDERR $s;
 		exit 1;
