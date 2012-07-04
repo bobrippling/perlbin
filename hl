@@ -1,5 +1,4 @@
-#!/usr/bin/perl -w
-use strict;
+#!/usr/bin/perl
 
 sub basename($)
 {
@@ -56,3 +55,5 @@ while(<>){
 		print $_;
 	}
 }
+
+print $colours{norm};

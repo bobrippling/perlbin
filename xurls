@@ -3,7 +3,7 @@
 use warnings;
 
 $hostchars = '[a-z0-9._+-]';
-$pathchars = '[a-z0-9._+#=?&:;%/!,-]';
+$pathchars = '[a-z0-9._+#=?&:;%/!,-~]';
 
 sub scan($$$)
 {
@@ -96,6 +96,8 @@ $opt{fname} = 1 if $#files > 0 || $opt{lineno};
 if(!$opt{colour} || ($opt{colour} == 1 && !-t STDOUT)){
 	$col{$_} = '' for keys %col;
 }
+
+$| = 1;
 
 if(@files){
 	for my $f (@files){
