@@ -2,8 +2,8 @@
 
 use warnings;
 
-$hostchars = '[a-z0-9._+-]';
-$pathchars = '[a-z0-9._+#=?&:;%/!,-~]';
+$hostchars = '[a-z0-9-._+]';
+$pathchars = '[a-z0-9-._+#=?&:;%/!,~]';
 
 sub scan($$$)
 {
