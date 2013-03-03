@@ -5,16 +5,7 @@ use warnings;
 sub usage
 {
 	print "Usage: $0 [-n] src-file(s) dest-dir\n";
-	print "Program to mkdir then $cmd\n";
 	exit 1;
-}
-
-sub quote($)
-{
-	my $_ = $_[0];
-	s/"/\\"/g;
-	s/[`\$]/\\&/g;
-	return '"' . $_ . '"';
 }
 
 sub basename($)
@@ -26,8 +17,8 @@ sub basename($)
 
 sub mkdir_p($)
 {
-	$d = '';
-	@d = map { $d = "$d/$_" } grep { length } split m|/|o, $_[0];
+	my $d = '';
+	my @d = map { $d .= "/$_" } grep { length } split m|/|o, $_[0];
 
 	if($_[0] !~ m|^/|){
 		s|^/||o for @d;
@@ -36,12 +27,21 @@ sub mkdir_p($)
 	for(@d){
 		if(!-d $_){
 			if($debug){
-				print "mkdir '$_'\n";
+				print "mkdir($_)\n";
 			}else{
 				mkdir $_ or die "$0: mkdir \"$_\": $!\n";
 			}
 		}
 	}
+	return 1;
+}
+
+sub echo
+{
+	$\ = ' ';
+	print for @_;
+	$\ = "\n";
+	print '';
 	return 1;
 }
 
@@ -60,7 +60,7 @@ usage if(@ARGV < 2 or $ARGV[0] eq '--help');
 our ($debug, $inter) = (0, 0); # cmd line opts
 
 # use a temp array, otherwise shift damages the loop
-for(@argv = @ARGV){
+for(my @argv = @ARGV){
 	if($_ eq '-n'){
 		$debug = 1;
 	}elsif($_ eq '-i'){
@@ -74,19 +74,19 @@ for(@argv = @ARGV){
 	}
 	shift @ARGV;
 }
-@argv = undef;
 
-$last  = $ARGV[$#ARGV];
-@files = map { quote($_) } @ARGV[0 .. $#ARGV-1];
+@files = @ARGV;
+$last = pop @files;
 
-$cmd  = $iscopy ? 'cp' : 'mv';
-$args = $iscopy ? '-LR' : '';
+if($iscopy){
+	$cmd  = 'cp';
+	@args = ('-LR');
+}else{
+	$cmd  = 'mv';
+	@args = ();
+}
 
-$args = "$args -i" if $inter;
+push @args, "-i" if $inter;
 
 mkdir_p($last);
-if($debug){
-	print "$cmd $args @files " . quote($last) . "\n";
-}else{
-	exec( "$cmd $args @files " . quote($last)) or die "exec(): $!$/";
-}
+($debug ? \&echo : \&exec)->($cmd, @args, @files, $last) or die "exec(): $!$/";
