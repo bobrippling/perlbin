@@ -58,6 +58,7 @@ sub waitone()
 {
 	$pid = wait();
 	# status in $?
+	my $status = $? >> 8;
 
 	if($pid == -1){
 		# should never get here
@@ -70,7 +71,7 @@ sub waitone()
 
 	my $fh;
 	my $col;
-	if($?){
+	if($status){
 		$fh = STDERR;
 		$col = $col{err};
 	}else{
@@ -78,8 +79,8 @@ sub waitone()
 		$col = $col{status};
 	}
 
-	print $fh "${col}wget = $?$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
-	#$errs{$downloads{$pid}} = $? if $?;
+	print $fh "${col}wget = $status$col{off} for $col{info}" . $downloads{$pid} . "$col{off}\n";
+	#$errs{$downloads{$pid}} = $status if $status;
 
 	delete $downloads{$pid};
 }
