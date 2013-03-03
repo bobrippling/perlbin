@@ -45,6 +45,12 @@ sub echo
 	return 1;
 }
 
+sub exec
+{
+	# Oh you, Perl...
+	exec @_
+}
+
 $progname = basename($0);
 
 if($progname eq 'mkcp'){
