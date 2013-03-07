@@ -29,6 +29,10 @@ sub scan($$$)
 # check for pathchars, or a set of nested parens
 				!!xoi){ # allow space + comments, compile once, strcasecmp
 
+		my($p,$m,$e) = ($`,$&,$');
+
+		$e = '.' . $e if $m =~ s/\.$//;
+
 		if($opt{fname} && $file){
 			print "$col{red}$file$col{none}:";
 		}
@@ -40,9 +44,9 @@ sub scan($$$)
 		}
 
 		if($opt{hl}){
-			print "$`$col{brown}$&$col{none}$'\n";
+			print "$p$col{brown}$m$col{none}$e\n";
 		}else{
-			print "$&\n";
+			print "$m\n";
 		}
 	}
 }
