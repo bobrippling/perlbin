@@ -32,6 +32,8 @@ for(@ARGV){
 		$lineno = 1;
 	}elsif($_ eq '-I'){
 		$sens = 1;
+	}elsif($_ eq '--no-bg'){
+		$colours{bg} = "\e[m";
 	}elsif($_ eq '--help'){
 		usage();
 	}elsif(!defined $regex){
