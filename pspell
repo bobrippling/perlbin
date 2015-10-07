@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+
+my $dictpath = '/usr/share/dict/words';
+open my $fh, '<', $dictpath or die "$0: open $words: $!\n";
+my %dict;
+while(<$fh>){
+	chomp;
+	$dict{lc($_)} = 1;
+}
+close $fh;
+
+while(<>){
+	chomp;
+	my @words = grep /^[a-zA-Z]+$/, split /\b/, $_;
+	for(@words){
+		my $exists = 0;
+
+		if(exists $dict{lc($_)}){
+			$exists = 1;
+		}else{
+			(my $no_s = lc $_) =~ s/s$//;
+			$exists = exists $dict{$no_s};
+		}
+
+		if(!$exists){
+			print "$ARGV:$.: $_\n"
+		}
+	}
+}
