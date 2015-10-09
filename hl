@@ -8,7 +8,7 @@ sub basename($)
 
 sub usage()
 {
-	print "Usage: $0 [-n] [-I] regex [files...]\n";
+	print "Usage: $0 [-n] [-i] regex [files...]\n";
 	exit 1;
 }
 
@@ -25,13 +25,13 @@ my %colours  = (
 warn basename($0) . ": output isn't a terminal\n" unless -t STDOUT;
 
 my @files;
-my $sens = 0;
+my $sens = 1;
 
 for(@ARGV){
 	if($_ eq '-n'){
 		$lineno = 1;
-	}elsif($_ eq '-I'){
-		$sens = 1;
+	}elsif($_ eq '-i'){
+		$sens = 0;
 	}elsif($_ eq '--no-bg'){
 		$colours{bg} = "\e[m";
 	}elsif($_ eq '--help'){
