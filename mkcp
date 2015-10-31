@@ -10,9 +10,9 @@ sub usage
 
 sub basename($)
 {
-	my $_ = $_[0];
-	return $1 if m|.*/([^/]+$)|;
-	return $_;
+	my $x = $_[0];
+	return $1 if $x =~ m|.*/([^/]+$)|;
+	return $x;
 }
 
 sub mkdir_p($)
