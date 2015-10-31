@@ -1,0 +1,62 @@
+#!/usr/bin/perl
+
+sub usage
+{
+	print STDERR "Usage: $0 [-m]\n";
+	print STDERR "  Read [size file] from stdin and sum sizes until 20MB\n";
+	print STDERR "  -m: Create directories from 0-n, moving files to there\n";
+	print STDERR "\n";
+	print STDERR "Example usage: du * | email-sort -m\n";
+	exit(1);
+}
+
+sub mkdir_or_die
+{
+	my $d = shift;
+	if(!mkdir $d){
+		die "mkdir $d: $!";
+	}
+}
+
+$mkdir_and_move = 0;
+
+if(@ARGV){
+	if($ARGV[0] eq '-m'){
+		$mkdir_and_move = 1;
+		shift;
+	}else{
+		usage();
+	}
+}
+
+
+my $n = 0;
+if($mkdir_and_move){
+	mkdir_or_die $n;
+}
+
+my $t = 0;
+while(<>){
+	/^([0-9]+)\t(.*)$/ or die;
+
+	my $sz = $1;
+	my $f = $2;
+
+	if($t + $sz > 20000){
+		print "--- total $t\n";
+		$t = 0;
+
+		$n++;
+		if($mkdir_and_move){
+			mkdir_or_die $n;
+		}
+	}else{
+		$t += $sz;
+	}
+
+	print;
+
+	if($mkdir_and_move){
+		system('mv', '-i', $f, $n);
+	}
+}
