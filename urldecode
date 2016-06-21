@@ -21,7 +21,7 @@ sub usage()
 
 sub decode($)
 {
-	my $_ = $_[0];
+	$_ = $_[0];
 
 	$_ = $` . chr(hex $1) . $' while m#%([0-9A-Za-z]{2})#;
 
@@ -34,7 +34,7 @@ sub decode($)
 
 sub encode($)
 {
-	my $_ = $_[0];
+	$_ = $_[0];
 	my $ret = '';
 
 	for(split //){
