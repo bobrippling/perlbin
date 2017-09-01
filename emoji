@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+
+my %emojis = (
+	"thinking" => "🤔",
+	"winking" => "😉",
+	"eyerolling" => "🙄",
+	"unamused" => "😕",
+	"grimac(ing|e)" => "😬",
+	"devilsmile" => "😈",
+	"laugh|rofl" => "😂",
+	"tada" => "🎉",
+	"scream" => "😱",
+);
+
+sub usage {
+	print STDERR "Usage: $0 desc\n";
+	exit 2;
+}
+
+sub emit {
+	print(shift(), "\n");
+	exit 0;
+}
+
+usage() if @ARGV != 1;
+my $desc = shift;
+
+for my $re (keys %emojis){
+	if($desc =~ /$re/ or $re =~ /$desc/){
+		emit($emojis{$re});
+	}
+}
+
+print STDERR "$0: emoji '$desc' not found\n";
+exit 1;
