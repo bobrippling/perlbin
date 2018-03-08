@@ -1,0 +1,31 @@
+#!/usr/bin/perl
+
+sub usage
+{
+	print STDERR "Usage: $0 HH:MM\n";
+	exit(2);
+}
+
+usage() unless @ARGV == 1;
+
+my($h, $m);
+if($ARGV[0] =~ /^([0-9]{1,2}):([0-9]{2})$/){
+	$h = $1;
+	$m = $2;
+
+	if($h >= 24 or $m >= 60){
+		usage();
+	}
+}else{
+	usage();
+}
+
+while(1){
+	my ($sec, $min, $hour) = localtime(time());
+
+	if($min == $m and $hour == $h){
+		last;
+	}
+
+	sleep 30;
+}
