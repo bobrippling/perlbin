@@ -16,9 +16,10 @@ sub scan($$$)
 
 # http://
 
-      $hostchars+\.[a-z]+/
+      $hostchars+\.[a-z]+
 
-# www.tim.google.com/ - the [a-z].com is the main anchor for the whole regex - incase http:// is omitted
+# www.tim.google.com - the [a-z].com is the main anchor for the whole regex - incase http:// is omitted
+# note no trailing slash
 
       ($pathchars+/\?)*
 
