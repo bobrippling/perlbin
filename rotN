@@ -1,0 +1,38 @@
+#!/usr/bin/perl
+
+sub usage
+{
+	print STDERR "Usage: $0 N [files...]\n";
+	exit 2;
+}
+
+sub rot
+{
+	my ($s, $n) = @_;
+	my $out = '';
+	for(my $i = 0; $i < length $s; $i++) {
+		my $ch = substr($s, $i, 1);
+		if(ord('a') <= ord($ch) && ord($ch) <= ord('z')) {
+			$out .= chr((((ord($ch) - ord('a')) + $n) % 26) + ord('a'));
+		}elsif(ord('A') <= ord($ch) && ord($ch) <= ord('Z')) {
+			$out .= chr((((ord($ch) - ord('A')) + $n) % 26) + ord('A'));
+		}else{
+			$out .= $ch;
+		}
+	}
+	return $out;
+}
+
+my $n;
+if(@ARGV == 0){
+	usage();
+}elsif($ARGV[0] =~ /^[0-9]+$/){
+	$n = 26 - $&;
+	shift @ARGV;
+}else{
+	usage();
+}
+
+while(<>){
+	print rot($_, $n);
+}
