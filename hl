@@ -22,8 +22,6 @@ my %colours  = (
 	norm => "\e[0m"
 );
 
-warn basename($0) . ": output isn't a terminal\n" unless -t STDOUT;
-
 my @files;
 my $sens = 1;
 
