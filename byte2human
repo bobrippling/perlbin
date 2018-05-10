@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+my @si = (
+	"",
+	"KiB",
+	"MiB",
+	"GiB",
+	"TiB",
+);
+
+sub byte2human
+{
+	my $n = shift();
+	my $si_index = 0;
+
+	while($n >= 1024){
+		$si_index++;
+		$n /= 1024;
+
+		last if $si_index == $#si;
+	}
+
+	my $width = int($n) == $n ? 0 : 2;
+	return sprintf "%.*f%s", $width, $n, $si[$si_index];
+}
+
+while(<>){
+	s/\b[0-9]+\b/byte2human($&)/ge;
+	print;
+}
