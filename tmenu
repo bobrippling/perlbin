@@ -1,0 +1,201 @@
+#!/usr/bin/perl
+
+chomp(my $os = `uname -s`);
+
+sub ctrl_and
+{
+	return chr(ord(shift()) & 037);
+}
+
+my $erase = chr(127);
+
+sub stty
+{
+	my $flag = "-f";
+	if($os =~ /MINGW/){
+		$flag = "-F";
+	}
+	system("stty $flag /dev/stderr @_");
+}
+
+sub iserase
+{
+	my $ch = shift;
+	return $ch eq $erase;
+}
+
+sub uniq
+{
+	my %out;
+	$out{$_} = 1 for @_;
+	return keys %out;
+}
+
+sub simplify
+{
+	#return substr($_, 0, 3) . "..." . substr($_, length($_) - 3);
+	# assumes filenames:
+	my $x = $_;
+	$x =~ s;(.)[^/]+/;$1/;g;
+	return $x;
+}
+
+sub index_i
+{
+	my($s, $c, $start) = @_;
+	return index(lc($s), lc($c), $start);
+}
+
+sub ordered
+{
+	sub chardistances
+	{
+		my($chars, $verbose) = @_;
+		my $anchor = substr($choice, 0, 1);
+		my $match = 999999999;
+		my $match_v = '';
+		my $start = 0;
+
+		return $match unless length($choice);
+
+		while(1){
+			$start = index_i($chars, $anchor, $start);
+			last if $start == -1;
+
+			if(substr($chars, $start) !~ /$choice_re/i){
+				last;
+			}
+
+			# got a match, record
+			if(length($&) < $match){
+				$match = length($&);
+				$match_v = $&;
+			}
+			$start++;
+		}
+
+		if($verbose){
+			return $match . " ($match_v)";
+		}
+		return $match;
+	}
+
+	my %distances = map { $_ => chardistances($_) } @_;
+	return sort { $distances{$a} <=> $distances{$b} } @_;
+}
+
+sub reescape
+{
+	my $c = shift;
+	my $special = ".+*[](){}";
+	if(index($special, $c) >= 0){
+		return "\\$c";
+	}
+	return $c;
+}
+
+if(@ARGV){
+	@choices = @ARGV;
+}else{
+	@choices = map { chomp; $_ } <STDIN>;
+	open STDIN, '<&STDERR' or die "couldn't reopen stdin: $!";
+}
+
+$| = 1;
+stty("-icanon -echo");
+END {
+	my $ec = $?;
+	stty("icanon echo");
+	return $ec;
+};
+
+$choice = "";
+$after = "";
+#$cursor_index = 0;
+$prompt = "> ";
+$prompt_len = length($prompt);
+
+while(1){
+	# filter --------------------------------
+	($choice_re = $choice) =~ s/./reescape($&) . ".*?"/eg;
+
+	$after = " [<no matches>]";
+	eval {
+		@relevant = grep /$choice_re/i, @choices;
+	} or do {
+		@relevant = ();
+		$after = " [<regex error (/$choice_re/)>]";
+	};
+
+	my @substrs;
+	if(@relevant){
+		$columns = $ENV{COLUMNS} - 1;
+		if($columns == -1){
+			$columns = 80;
+		}
+		$space = $columns - $prompt_len - length($choice) - 3; # 3 for " []"
+		$space_per_choice = ($space - @relevant * 2) / @relevant;
+
+		my $overflow = 0;
+		@substrs = ();
+		for(ordered(@relevant)){
+			my $next = simplify($_);
+			if(length(join(", ", map({ $_->[0] } @substrs), $next, "...")) >= $space){
+				$overflow = 1;
+				last;
+			}
+			push @substrs, [$next, $_];
+		}
+		if($overflow){
+			push @substrs, ["...", "..."];
+		}
+
+		$after = " [" . join(", ", map({ $_->[0] } @substrs)) . "]";
+	}
+
+	# prompt --------------------------------
+	print STDERR "\r$prompt$choice$after\x1b[K";
+	print STDERR "\x1b[D" x length($after) ; # - (length($choice) - $cursor_index));
+
+	if(read(STDIN, $ch, 1) != 1){
+		exit(1);
+	}
+
+	if(iserase($ch)){
+		$choice =~ s/.$//;
+		#$cursor_index--;
+
+	}elsif(ord($ch) == 10){
+		print STDERR "\r\x1b[K";
+
+		if(@substrs){
+			$choice = $substrs[0]->[1];
+			last;
+		}
+		print STDERR "no matches\n";
+
+	}elsif($ch eq ctrl_and('w')){
+		$choice =~ s/\b[a-zA-Z0-9]+$//;
+		#$cursor_index -= length($&);
+
+	}elsif($ch eq ctrl_and('u')){
+		$choice = "";
+		#$cursor_index = 0;
+
+		#}elsif($ch eq ctrl_and('f')){
+		#    if($cursor_index < length($choice)){
+		#        $cursor_index++;
+		#    }
+
+		#}elsif($ch eq ctrl_and('b')){
+		#    if($cursor_index > 0){
+		#        $cursor_index--;
+		#    }
+
+	}else{
+		$choice .= $ch;
+		#$cursor_index++;
+	}
+}
+
+print "$choice\n";
