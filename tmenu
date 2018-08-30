@@ -81,7 +81,11 @@ sub ordered
 	}
 
 	my %distances = map { $_ => chardistances($_) } @_;
-	return sort { $distances{$a} <=> $distances{$b} } @_;
+	return sort {
+		my $distcmp = $distances{$a} <=> $distances{$b};
+		return $distcmp if $distcmp;
+		return length($a) <=> length($b);
+	} @_;
 }
 
 sub reescape
