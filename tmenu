@@ -11,9 +11,9 @@ my $erase = chr(127);
 
 sub stty
 {
-	my $flag = "-f";
-	if($os =~ /MINGW/){
-		$flag = "-F";
+	my $flag = "-F";
+	if($os eq "Darwin"){
+		$flag = "-f";
 	}
 	system("stty $flag /dev/stderr @_");
 }
