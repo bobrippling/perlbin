@@ -122,6 +122,7 @@ while(1){
 	$after = " [<no matches>]";
 	eval {
 		@relevant = grep /$choice_re/i, @choices;
+		1;
 	} or do {
 		@relevant = ();
 		$after = " [<regex error (/$choice_re/)>]";
