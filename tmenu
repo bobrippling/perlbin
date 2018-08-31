@@ -98,6 +98,12 @@ sub reescape
 	return $c;
 }
 
+$choice = "";
+$after = "";
+#$cursor_index = 0;
+$prompt = "> ";
+$prompt_len = length($prompt);
+
 if(@ARGV){
 	@choices = @ARGV;
 }else{
@@ -112,12 +118,6 @@ END {
 	stty("icanon echo");
 	return $ec;
 };
-
-$choice = "";
-$after = "";
-#$cursor_index = 0;
-$prompt = "> ";
-$prompt_len = length($prompt);
 
 while(1){
 	# filter --------------------------------
