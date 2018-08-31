@@ -103,6 +103,12 @@ $after = "";
 #$cursor_index = 0;
 $prompt = "> ";
 $prompt_len = length($prompt);
+$print_all = 0;
+
+if(@ARGV && ($ARGV[0] eq '--all' or $ARGV[0] eq '-a')){
+	shift;
+	$print_all = 1;
+}
 
 if(@ARGV){
 	@choices = @ARGV;
@@ -173,11 +179,16 @@ while(1){
 	}elsif(ord($ch) == 10){
 		print STDERR "\r\x1b[K";
 
-		if(@substrs){
-			$choice = $substrs[0]->[1];
-			last;
+		if($print_all && @relevant){
+			for(@relevant){
+				print "$_\n";
+			}
+		}elsif(@substrs){
+			print "$substrs[0]->[1]\n";
+		}else{
+			print STDERR "no matches\n";
 		}
-		print STDERR "no matches\n";
+		last;
 
 	}elsif($ch eq ctrl_and('w')){
 		$choice =~ s/\b[a-zA-Z0-9]+$//;
@@ -202,5 +213,3 @@ while(1){
 		#$cursor_index++;
 	}
 }
-
-print "$choice\n";
