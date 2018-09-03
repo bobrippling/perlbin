@@ -33,11 +33,13 @@ sub uniq
 
 sub simplify
 {
-	#return substr($_, 0, 3) . "..." . substr($_, length($_) - 3);
-	# assumes filenames:
-	my $x = $_;
-	$x =~ s;(.)[^/]+/;$1/;g;
-	return $x;
+	my($str, $type) = $_;
+	if($type == 'full'){
+		$str =~ s;(.)(?:[^/]+(/)|[^-]+(-));$1$2$3;g;
+	}else{
+		$str =~ s;(.)(?:[^/]+(/)|[^-]+(-));$1 . substr("$2$3", 0, 3);ge;
+	}
+	return $str;
 }
 
 sub index_i
@@ -147,16 +149,29 @@ while(1){
 		$space = $columns - $prompt_len - length($choice) - 3; # 3 for " []"
 		$space_per_choice = ($space - @relevant * 2) / @relevant;
 
-		my $overflow = 0;
-		@substrs = ();
-		for(ordered(@relevant)){
-			my $next = simplify($_);
-			if(length(join(", ", map({ $_->[0] } @substrs), $next, "...")) >= $space){
-				$overflow = 1;
+		my $attemptno = 0; # 0 - 2. 0=full strings, 1=medium simplify(), 2=full simplify()
+		my @ordered_relevant = ordered(@relevant);
+
+		while(1){
+			my $overflow = 0;
+			@substrs = ();
+
+			for(@ordered_relevant){
+				my $next = $attemptno == 0 ? $_ : simplify($_, $attemptno == 1 ? 'medium' : 'full');
+				if(length(join(", ", map({ $_->[0] } @substrs), $next, "...")) >= $space){
+					$overflow = 1;
+					last;
+				}
+				push @substrs, [$next, $_];
+			}
+
+			if($overflow and $attemptno < 2){
+				$attemptno++;
+			}else{
 				last;
 			}
-			push @substrs, [$next, $_];
 		}
+
 		if($overflow){
 			push @substrs, ["...", "..."];
 		}
