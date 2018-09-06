@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+
+if(@ARGV == 0){
+	print STDERR "Usage: $0 time [time2...]\n";
+	exit 2;
+}
+
+sub h
+{
+	my $sec = shift();
+	my $ms = 1000 * ($sec - int($sec));
+
+	my $min = $sec / 60; $sec %= 60;
+	my $hr = $min / 60; $min %= 60;
+	my $days = $hr / 24; $hr %= 24;
+	my $weeks = $days / 7; $days %= 7;
+
+	my $s = "";
+	sub addstr
+	{
+		my($n, $name) = @_;
+		$n = int($n);
+		return if $n < 1;
+
+		my $append = "$n $name" . ($n > 1 ? "s" : "");
+		if(length($s)){
+			$s = "$s, $append";
+		}else{
+			$s = $append;
+		}
+	}
+
+	addstr($weeks, "week");
+	addstr($days, "day");
+	addstr($hr, "hour");
+	addstr($min, "minute");
+	addstr($sec, "second");
+	addstr($ms, "millisecond");
+
+	return $s;
+}
+
+for(@ARGV){
+	print(h($_), "\n");
+}
