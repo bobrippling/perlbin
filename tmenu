@@ -157,7 +157,24 @@ while(1){
 			@substrs = ();
 
 			for(@ordered_relevant){
-				my $next = $attemptno == 0 ? $_ : simplify($_, $attemptno == 1 ? 'medium' : 'full');
+				my $next;
+
+				if($attemptno == 0){
+					$next = $_;
+				}elsif($attemptno == 1){
+					if(@substrs < 3){
+						$next = $_;
+					}elsif(@substrs < 6){
+						$next = simplify($_, 'medium');
+					}else{
+						$next = simplify($_, 'full');
+					}
+				}elsif($attemptno == 2){
+					$next = simplify($_, 'medium');
+				}elsif($attemptno == 3){
+					$next = simplify($_, 'full');
+				}
+
 				if(length(join(", ", map({ $_->[0] } @substrs), $next, "...")) >= $space){
 					$overflow = 1;
 					last;
