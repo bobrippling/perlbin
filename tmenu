@@ -241,6 +241,12 @@ while(1){
 	#        $cursor_index--;
 	#    }
 
+	}elsif($ch eq ctrl_and('i')){ # tab
+		print STDERR "\n";
+		for(@relevant){
+			print STDERR "$_\n";
+		}
+
 	}else{
 		$choice .= $ch;
 		#$cursor_index++;
