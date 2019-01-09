@@ -231,15 +231,15 @@ while(1){
 		$choice = "";
 		#$cursor_index = 0;
 
-		#}elsif($ch eq ctrl_and('f')){
-		#    if($cursor_index < length($choice)){
-		#        $cursor_index++;
-		#    }
+	#}elsif($ch eq ctrl_and('f')){
+	#    if($cursor_index < length($choice)){
+	#        $cursor_index++;
+	#    }
 
-		#}elsif($ch eq ctrl_and('b')){
-		#    if($cursor_index > 0){
-		#        $cursor_index--;
-		#    }
+	#}elsif($ch eq ctrl_and('b')){
+	#    if($cursor_index > 0){
+	#        $cursor_index--;
+	#    }
 
 	}else{
 		$choice .= $ch;
