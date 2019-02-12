@@ -10,12 +10,12 @@ sub parse
 {
 	my @folk;
 	while(<>){
-		if(!/^([a-z]+) +(-?[0-9]+(\.[0-9]+)?)$/){
-			die "invalid line, expected <name> <balance>\n";
+		if(!/^([a-z]+) +(-?[0-9]+(\.[0-9]+)?)( (-?[0-9]+(\.[0-9]+)?))?$/){
+			die "invalid line, expected <name> <balance> [desired]\n";
 		}
 
-		my($name, $balance) = ($1, $2);
-		push @folk, { name => $name, balance => $balance };
+		my($name, $balance, $desired) = ($1, $2, $5);
+		push @folk, { name => $name, balance => $balance, desired => $desired };
 	}
 	return @folk;
 }
@@ -33,9 +33,18 @@ my @folk = parse();
 my $total = balance_total(@folk);
 my $perperson = -$total / @folk;
 
+sub get_desired
+{
+	my $p = shift;
+	if(defined $p->{desired}){
+		return -$p->{desired};
+	}
+	return -$perperson;
+}
+
 sub is_owed
 {
-	return $_->{balance} < -$perperson;
+	return $_->{balance} < get_desired($_);
 }
 
 sub find_max_owed
@@ -75,9 +84,15 @@ sub currency_cmp
 }
 
 for(@folk){
-	while(currency_cmp($_->{balance}, -$perperson) > 0){
+	while(currency_cmp($_->{balance}, get_desired($_)) > 0){
 		my $to = find_max_owed(@folk);
-		my $diff = -$to->{balance} - $perperson; # pay up to $perperson from $_ to $to
+		my $to_target = get_desired($to);
+		my $diff = $to_target - $to->{balance};
+
+		my $min = get_desired($_);
+		if($_->{balance} - $diff < $min){
+			$diff = $_->{balance} - $min;
+		}
 
 		$to->{balance} += $diff;
 		$_->{balance} -= $diff;
