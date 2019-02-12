@@ -1,4 +1,10 @@
 #!/usr/bin/perl
+use strict;
+use warnings;
+
+use constant {
+	INFINITY => "inf",
+};
 
 sub parse
 {
@@ -34,7 +40,7 @@ sub is_owed
 
 sub find_max_owed
 {
-	my $lowest_balance = 0;
+	my $lowest_balance = INFINITY;
 	my $max = undef;
 
 	for(@_){
