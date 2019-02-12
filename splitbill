@@ -50,6 +50,10 @@ sub find_max_owed
 		}
 	}
 
+	if(!$max){
+		die "no-one owes anyone any money?";
+	}
+
 	return $max;
 }
 
