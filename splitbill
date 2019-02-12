@@ -57,8 +57,25 @@ sub find_max_owed
 	return $max;
 }
 
+sub equal_to_nearest_penny
+{
+	my($a, $b) = @_;
+	return sprintf("%.2f", $a) eq sprintf("%.2f", $b);
+}
+
+sub currency_cmp
+{
+	my($a, $b) = @_;
+
+	if(equal_to_nearest_penny($a, $b)){
+		return 0;
+	}
+
+	return $a <=> $b;
+}
+
 for(@folk){
-	while($_->{balance} > -$perperson){
+	while(currency_cmp($_->{balance}, -$perperson) > 0){
 		my $to = find_max_owed(@folk);
 		my $diff = -$to->{balance} - $perperson; # pay up to $perperson from $_ to $to
 
