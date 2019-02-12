@@ -49,12 +49,18 @@ sub is_owed
 
 sub find_max_owed
 {
-	my $lowest_balance = INFINITY;
+	my $biggest_diff = -(INFINITY);
 	my $max = undef;
 
 	for(@_){
-		if(is_owed($_) and $_->{balance} < $lowest_balance){
-			$lowest_balance = $_->{balance};
+		if(!is_owed($_)){
+			next;
+		}
+
+		my $diff_to_desired = get_desired($_) - $_->{balance};
+
+		if($diff_to_desired > $biggest_diff){
+			$biggest_diff = $diff_to_desired;
 			$max = $_;
 		}
 	}
@@ -83,19 +89,37 @@ sub currency_cmp
 	return $a <=> $b;
 }
 
-for(@folk){
-	while(currency_cmp($_->{balance}, get_desired($_)) > 0){
-		my $to = find_max_owed(@folk);
-		my $to_target = get_desired($to);
-		my $diff = $to_target - $to->{balance};
-
-		my $min = get_desired($_);
-		if($_->{balance} - $diff < $min){
-			$diff = $_->{balance} - $min;
+sub at_desired
+{
+	for(@_){
+		if(!equal_to_nearest_penny($_->{balance}, get_desired($_))){
+			#print "$_->{name} not at desired: $_->{balance}\n";
+			return 0;
 		}
-
-		$to->{balance} += $diff;
-		$_->{balance} -= $diff;
-		print "$_->{name} $diff --> $to->{name}\n";
 	}
+	return 1;
+}
+
+while(!at_desired(@folk)){
+	for(@folk){
+		while(currency_cmp($_->{balance}, get_desired($_)) > 0){
+			my $to = find_max_owed(@folk);
+			my $to_target = get_desired($to);
+			my $diff = $to_target - $to->{balance};
+
+			my $min = get_desired($_);
+			if($_->{balance} - $diff < $min){
+				$diff = $_->{balance} - $min;
+			}
+
+			$to->{balance} += $diff;
+			$_->{balance} -= $diff;
+			print "$_->{name} $diff --> $to->{name}\n";
+		}
+	}
+}
+
+print "\n";
+for(@folk){
+	print "$_->{name}: balance=$_->{balance} (" . get_desired($_) . " desired)\n";
 }
