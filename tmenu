@@ -152,8 +152,9 @@ while(1){
 		my $attemptno = 0; # 0 - 2. 0=full strings, 1=medium simplify(), 2=full simplify()
 		my @ordered_relevant = ordered(@relevant);
 
+		my $overflow;
 		while(1){
-			my $overflow = 0;
+			$overflow = 0;
 			@substrs = ();
 
 			for(@ordered_relevant){
