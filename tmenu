@@ -8,6 +8,7 @@ sub ctrl_and
 }
 
 my $erase = chr(127);
+my $clrtoeol = "\x1b[K";
 
 sub stty
 {
@@ -198,7 +199,7 @@ while(1){
 	}
 
 	# prompt --------------------------------
-	print STDERR "\r$prompt$choice$after\x1b[K";
+	print STDERR "\r$prompt$choice$after$clrtoeol";
 	print STDERR "\x1b[D" x length($after) ; # - (length($choice) - $cursor_index));
 
 	if(read(STDIN, $ch, 1) != 1){
@@ -210,7 +211,7 @@ while(1){
 		#$cursor_index--;
 
 	}elsif(ord($ch) == 10){
-		print STDERR "\r\x1b[K";
+		print STDERR "\r$clrtoeol";
 
 		if($print_all && @relevant){
 			for(@relevant){
