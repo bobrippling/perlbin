@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 
-chomp(my $os = `uname -s`);
-
 sub ctrl_and
 {
 	return chr(ord(shift()) & 037);
@@ -9,6 +7,7 @@ sub ctrl_and
 
 my $erase = chr(127);
 my $clrtoeol = "\x1b[K";
+my $os;
 
 sub stty
 {
@@ -101,6 +100,7 @@ sub reescape
 	return $c;
 }
 
+chomp($os = `uname -s`);
 $choice = "";
 $after = "";
 #$cursor_index = 0;
