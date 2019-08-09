@@ -2,13 +2,13 @@
 
 my %cursors;
 
-$cursors{"blinking-block"} = "\x1b[\x30 q";
-$cursors{"blinking-block2"} = "\x1b[\x31 q";
-$cursors{"steady-block"} = "\x1b[\x32 q";
-$cursors{"blinking-underline"} = "\x1b[\x33 q";
-$cursors{"steady-underline"} = "\x1b[\x34 q";
-$cursors{"blinking-bar"} = "\x1b[\x35 q";
-$cursors{"steady-bar"} = "\x1b[\x36 q";
+$cursors{"blinking-block"} = "\x1b[0 q";
+$cursors{"blinking-block2"} = "\x1b[1 q";
+$cursors{"steady-block"} = "\x1b[2 q";
+$cursors{"blinking-underline"} = "\x1b[3 q";
+$cursors{"steady-underline"} = "\x1b[4 q";
+$cursors{"blinking-bar"} = "\x1b[5 q";
+$cursors{"steady-bar"} = "\x1b[6 q";
 
 if(@ARGV != 1 or not exists $cursors{$ARGV[0]}){
 	print STDERR "Usage: $0 cursor-mode\n";
