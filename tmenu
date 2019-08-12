@@ -116,7 +116,7 @@ if(@ARGV && ($ARGV[0] eq '--all' or $ARGV[0] eq '-a')){
 if(@ARGV){
 	@choices = @ARGV;
 }else{
-	print STDERR "$0: loading...\r";
+	print STDERR "\r$0: loading...\r";
 	@choices = map { chomp; $_ } <STDIN>;
 	open STDIN, '<&STDERR' or die "couldn't reopen stdin: $!";
 	print STDERR "$clrtoeol";
