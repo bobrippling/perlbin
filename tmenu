@@ -15,7 +15,7 @@ sub stty
 	if($os eq "Darwin"){
 		$flag = "-f";
 	}
-	system("stty $flag /dev/stderr @_");
+	system("stty $flag /dev/tty @_");
 }
 
 sub iserase
