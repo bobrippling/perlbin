@@ -33,7 +33,7 @@ sub uniq
 
 sub simplify
 {
-	my($str, $type) = $_;
+	my($str, $type) = @_;
 	if($type == 'full'){
 		$str =~ s;(.)(?:[^/]+(/)|[^-]+(-));$1$2$3;g;
 	}else{
