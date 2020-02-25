@@ -123,10 +123,12 @@ if(@ARGV){
 }
 
 $| = 1;
-stty("-icanon -echo");
+sub stty_raw { stty("-icanon -echo"); }
+sub stty_cooked { stty("icanon echo"); }
+stty_raw();
 END {
 	my $ec = $?;
-	stty("icanon echo");
+	stty_cooked();
 	return $ec;
 };
 
