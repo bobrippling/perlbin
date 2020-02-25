@@ -145,7 +145,7 @@ while(1){
 		$after = " [<regex error (/$choice_re/)>]";
 	};
 
-	my @substrs;
+	my @ordered_relevant;
 	if(@relevant){
 		$columns = $ENV{COLUMNS} - 1;
 		if($columns == -1){
@@ -155,8 +155,9 @@ while(1){
 		$space_per_choice = ($space - @relevant * 2) / @relevant;
 
 		my $attemptno = 0; # 0 - 2. 0=full strings, 1=medium simplify(), 2=full simplify()
-		my @ordered_relevant = ordered(@relevant);
+		@ordered_relevant = ordered(@relevant);
 
+		my @substrs;
 		my $overflow;
 		while(1){
 			$overflow = 0;
@@ -181,11 +182,11 @@ while(1){
 					$next = simplify($_, 'full');
 				}
 
-				if(length(join(", ", map({ $_->[0] } @substrs), $next, "...")) >= $space){
+				if(length(join(", ", @substrs, $next, "...")) >= $space){
 					$overflow = 1;
 					last;
 				}
-				push @substrs, [$next, $_];
+				push @substrs, $next;
 			}
 
 			if($overflow and $attemptno < 2){
@@ -196,10 +197,10 @@ while(1){
 		}
 
 		if($overflow){
-			push @substrs, ["...", "..."];
+			push @substrs, "...";
 		}
 
-		$after = " [" . join(", ", map({ $_->[0] } @substrs)) . "]";
+		$after = " [" . join(", ", @substrs) . "]";
 	}
 
 	# prompt --------------------------------
@@ -222,8 +223,8 @@ while(1){
 				print "$_\n";
 			}
 			last;
-		}elsif(@substrs){
-			print "$substrs[0]->[1]\n";
+		}elsif(@ordered_relevant){
+			print "$ordered_relevant[0]\n";
 			last;
 		}else{
 			print STDERR "no matches\n";
