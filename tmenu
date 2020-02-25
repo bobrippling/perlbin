@@ -8,6 +8,7 @@ sub ctrl_and
 my $erase = chr(127);
 my $clrtoeol = "\x1b[K";
 my $os;
+my $tab = ctrl_and('i');
 
 sub stty
 {
@@ -116,6 +117,7 @@ $after = "";
 $prompt = "> ";
 $prompt_len = length($prompt);
 $print_all = 0;
+$consecutive_tabs = 0;
 
 if(@ARGV && ($ARGV[0] eq '--all' or $ARGV[0] eq '-a')){
 	shift;
@@ -220,6 +222,10 @@ while(1){
 		exit(1);
 	}
 
+	if(!($ch eq $tab)){
+		$consecutive_tabs = 0;
+	}
+
 	if(iserase($ch)){
 		$choice =~ s/.$//;
 		#$cursor_index--;
@@ -256,10 +262,41 @@ while(1){
 	#        $cursor_index--;
 	#    }
 
-	}elsif($ch eq ctrl_and('i')){ # tab
+	}elsif($ch eq $tab){
+		$consecutive_tabs++;
+
+		my $numselect = ($consecutive_tabs > 1);
+
 		print STDERR "\n";
-		for(@relevant){
-			print STDERR "$_\n";
+		my $a = @ordered_relevant ? \@ordered_relevant : \@relevant;
+		my $i = 0;
+		for(@$a){
+			my $to_print;
+			if($_ =~ /(.*)($choice_re)(.*)/){
+				$to_print = "$1\x1b[34m$2\x1b[0m$3";
+			}else{
+				$to_print = $_;
+			}
+
+			print STDERR ($numselect ? "$i " : "") . "$to_print\n";
+			$i++;
+		}
+
+		if($numselect){
+			$consecutive_tabs = 0;
+			print STDERR "[number] > ";
+			stty_cooked();
+			my $num = <STDIN>;
+			stty_raw();
+			if($num !~ /^[0-9]+$/){
+				print STDERR "invalid number '$num'\n";
+			}else{
+				my $chosen = (@$a)[$num];
+				if($chosen){
+					finish($chosen);
+					last;
+				}
+			}
 		}
 
 	}else{
