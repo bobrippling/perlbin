@@ -31,6 +31,15 @@ sub uniq
 	return keys %out;
 }
 
+sub finish
+{
+	my $ent = shift();
+	print STDERR "\r$clrtoeol";
+	if($ent){
+		print "$ent\n";
+	}
+}
+
 sub simplify
 {
 	my($str, $type) = @_;
@@ -216,15 +225,14 @@ while(1){
 		#$cursor_index--;
 
 	}elsif(ord($ch) == 10){
-		print STDERR "\r$clrtoeol";
-
 		if($print_all && @relevant){
 			for(@relevant){
 				print "$_\n";
 			}
+			finish();
 			last;
 		}elsif(@ordered_relevant){
-			print "$ordered_relevant[0]\n";
+			finish($ordered_relevant[0]);
 			last;
 		}else{
 			print STDERR "no matches\n";
