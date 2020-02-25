@@ -269,7 +269,7 @@ while(1){
 
 		print STDERR "\n";
 		my $a = @ordered_relevant ? \@ordered_relevant : \@relevant;
-		my $i = 0;
+		my $i = 1;
 		for(@$a){
 			my $to_print;
 			if($_ =~ /(.*)($choice_re)(.*)/){
@@ -291,7 +291,7 @@ while(1){
 			if($num !~ /^[0-9]+$/){
 				print STDERR "invalid number '$num'\n";
 			}else{
-				my $chosen = (@$a)[$num];
+				my $chosen = (@$a)[$num - 1];
 				if($chosen){
 					finish($chosen);
 					last;
