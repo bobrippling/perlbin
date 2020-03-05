@@ -7,6 +7,8 @@ sub ctrl_and
 
 my $erase = chr(127);
 my $clrtoeol = "\x1b[K";
+my $green = 32;
+my $blue = 34;
 my $os;
 my $tab = ctrl_and('i');
 
@@ -23,6 +25,12 @@ sub iserase
 {
 	my $ch = shift;
 	return $ch eq $erase;
+}
+
+sub colour
+{
+	my($s, $col) = @_;
+	return "\x1b[0;${col}m$s\x1b[0m";
 }
 
 sub uniq
@@ -111,6 +119,7 @@ sub reescape
 }
 
 chomp($os = `uname -s`);
+
 $choice = "";
 $after = "";
 #$cursor_index = 0;
@@ -273,8 +282,8 @@ while(1){
 		for(@$a){
 			my $to_print;
 			if($_ =~ /(.*)($choice_re)(.*)/i){
-				my $col = $i == 1 ? 32 : 34;
-				$to_print = "$1\x1b[${col}m$2\x1b[0m$3";
+				my $col = $i == 1 ? $green : $blue;
+				$to_print = $1 . colour($2, $col) . $3;
 			}else{
 				$to_print = $_;
 			}
