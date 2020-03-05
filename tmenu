@@ -224,8 +224,12 @@ while(1){
 	}
 
 	# prompt --------------------------------
+	my $after_verbatim = $after;
+	if (@relevant == 1) {
+		$after = colour($after, $green);
+	}
 	print STDERR "\r$prompt$choice$after$clrtoeol";
-	print STDERR "\x1b[D" x length($after) ; # - (length($choice) - $cursor_index));
+	print STDERR "\x1b[D" x length($after_verbatim) ; # - (length($choice) - $cursor_index));
 
 	if(read(STDIN, $ch, 1) != 1){
 		exit(1);
