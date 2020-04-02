@@ -1,0 +1,110 @@
+#!/usr/bin/perl
+
+my @variables;
+
+sub parse_line {
+	$_ = shift();
+	my $permissive = shift();
+
+	if(!/\s*(\S+) (0x[0-9a-f]+) \((\S+)\) +: +(.*)/){
+		return if $permissive;
+		die "invalid: $_\n";
+	}
+	my($name,$id,$type,$params) = ($1,$2,$3,$4);
+	$params =~ s/, +/,/g;
+	my @params = split / +/, $params;
+	my %kv;
+	for(@params){
+		/(.*)=(.*)/ or die;
+		$kv{$1} = $2;
+	}
+
+	push @variables, {
+		name => $name,
+		id => $id,
+		type => $type,
+		kv => \%kv,
+	};
+}
+
+#@variables = ();
+#while(<DATA>){
+#	parse_line($_, 0);
+#}
+
+sub parse_cmd {
+	@variables = ();
+	for(map { chomp; $_ } `v4l2-ctl --list-ctrls-menus`){
+		parse_line($_, 1);
+	}
+}
+parse_cmd();
+
+my $i = 0;
+my $dir = 0;
+
+sub dir { $i = ($i + $dir) % @variables }
+
+sub set {
+	# v4l2-ctl --set-ctrl brightness=128[,gamma=6,...]
+	my($name, $value) = @_;
+
+	system("v4l2-ctl", "--set-ctrl", "$name=$value");
+	#parse_cmd();
+}
+
+sub show_line {
+	$_ = shift();
+	print "$_->{name} $_->{kv}->{min} <= $_->{kv}->{value} <= $_->{kv}->{max}";
+}
+
+#for(@variables){
+#	show_line($_);
+#	print "\n";
+#}
+
+system "stty", "-icanon", "-echo";
+
+while(1){
+	if($dir){
+		dir();
+	}
+	my $ent = $variables[$i];
+	if(!($ent->{type} eq "int")){
+		next;
+	}
+	$dir = 0;
+
+	my %kv = %{$ent->{kv}};
+	show_line($ent);
+	print "\x1b[0K\r";
+
+	my $key = getc(STDIN);
+	if($key eq 'j'){
+		$dir = 1;
+	}elsif($key eq 'k'){
+		$dir = -1;
+	}elsif($key eq 'l'){
+		my $v = ($ent->{kv}->{value} += $ent->{kv}->{step});
+		print "\r\x1b[0K";
+		set($ent->{name}, $v);
+	}elsif($key eq 'h'){
+		my $v = ($ent->{kv}->{value} -= $ent->{kv}->{step});
+		print "\r\x1b[0K";
+		set($ent->{name}, $v);
+	}elsif($key eq 'q'){
+		last;
+	}
+}
+
+system "stty", "icanon", "echo";
+
+# v4l2-ctl --list-ctrls-menus
+__DATA__
+brightness 0x00980900 (int)    : min=0 max=255 step=1 default=128 value=128 flags=slider
+contrast 0x00980901 (int)    : min=0 max=255 step=1 default=128 value=128 flags=slider
+gamma 0x00980910 (int)    : min=1 max=6 step=1 default=4 value=6 flags=slider
+exposure 0x00980911 (int)    : min=781 max=18750 step=1 default=2343 value=3281 flags=inactive, volatile
+gain_automatic 0x00980912 (bool)   : default=1 value=1 flags=update
+power_line_frequency 0x00980918 (menu)   : min=0 max=2 default=0 value=1
+sharpness 0x0098091b (int)    : min=0 max=3 step=1 default=2 value=2 flags=slider
