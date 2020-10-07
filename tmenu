@@ -120,6 +120,18 @@ sub reescape
 
 chomp($os = `uname -s`);
 
+sub highlight
+{
+	my($s, $first) = @_;
+
+	if($s =~ /(.*)($choice_re)(.*)/i){
+		my $col = $first ? $green : $blue;
+		return $1 . colour($2, $col) . $3;
+	}
+
+	return $s;
+}
+
 $choice = "";
 $after = "";
 #$cursor_index = 0;
@@ -166,6 +178,7 @@ while(1){
 	};
 
 	my @ordered_relevant;
+	my $after_verbatim = $after;
 	if(@relevant){
 		$columns = $ENV{COLUMNS} - 1;
 		if($columns == -1){
@@ -220,14 +233,16 @@ while(1){
 			push @substrs, "...";
 		}
 
-		$after = " [" . join(", ", @substrs) . "]";
+		$after_verbatim = " [" . join(", ", @substrs) . "]";
+		if(@relevant == 1){
+			$after = colour($after_verbatim, $green);
+		}else{
+			my $i = 1;
+			$after = " [" . join(", ", map { highlight($_, $i++ == 1) } @substrs) . "]";
+		}
 	}
 
 	# prompt --------------------------------
-	my $after_verbatim = $after;
-	if (@relevant == 1) {
-		$after = colour($after, $green);
-	}
 	print STDERR "\r$prompt$choice$after$clrtoeol";
 	print STDERR "\x1b[D" x length($after_verbatim) ; # - (length($choice) - $cursor_index));
 
@@ -284,14 +299,7 @@ while(1){
 		my $a = @ordered_relevant ? \@ordered_relevant : \@relevant;
 		my $i = 1;
 		for(@$a){
-			my $to_print;
-			if($_ =~ /(.*)($choice_re)(.*)/i){
-				my $col = $i == 1 ? $green : $blue;
-				$to_print = $1 . colour($2, $col) . $3;
-			}else{
-				$to_print = $_;
-			}
-
+			my $to_print = highlight($_, $i == 1);
 			print STDERR ($numselect ? "$i " : "") . "$to_print\n";
 			$i++;
 		}
