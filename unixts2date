@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+
+use POSIX qw(strftime);
+
+sub ts2d {
+	my ($sec, $ms) = @_;
+
+	return strftime(
+		"%Y-%m-%d %H:%M:%S" . (length($ms) ? ".$ms" : ""),
+		localtime($sec),
+	);
+}
+
+while(<>){
+	# e.g. 1620249335.476
+	s/\b(\d{5,})\b(?:\.(\d{3}))?/ts2d($1, $2)/ge;
+	print;
+}
