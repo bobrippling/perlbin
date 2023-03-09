@@ -1,4 +1,11 @@
-#!/usr/bin/perl -p
+#!/usr/bin/perl
 
-s/^[ \t]+//;
-s/[ \t]+$//;
+chomp(my $cols = `tput cols`);
+
+while(<>){
+	chomp;
+	if(length > $cols){
+		$_ = substr($_, 0, $cols);
+	}
+	print "$_\n";
+}
