@@ -5,6 +5,7 @@ use warnings;
 sub usage
 {
 	print "Usage: $0 [-n] src-file(s) dest-dir\n";
+	print STDERR "-n: no-op\n";
 	exit 1;
 }
 
