@@ -4,8 +4,9 @@ use warnings;
 
 sub usage
 {
-	print "Usage: $0 [-n] src-file(s) dest-dir\n";
+	print STDERR "Usage: $0 [-p] [-n] src-file(s) dest-dir\n";
 	print STDERR "-n: no-op\n";
+	print STDERR "-p: make all but the final component, to permit naming a file inside the target\n";
 	exit 1;
 }
 
@@ -63,7 +64,7 @@ if($progname eq 'mkcp'){
 
 usage if @ARGV < 2 or $ARGV[0] eq '--help';
 
-our ($debug, $inter) = (0, 0); # cmd line opts
+our ($debug, $inter, $minus1) = (0, 0, 0); # cmd line opts
 
 # use a temp array, otherwise shift damages the loop
 for(my @argv = @ARGV){
@@ -72,6 +73,8 @@ for(my @argv = @ARGV){
 	}elsif($_ eq '-i'){
 		print STDERR "interactive\n" if $debug;
 		$inter = 1;
+	}elsif($_ eq '-p'){
+		$minus1 = 1;
 	}elsif($_ eq '-R'){
 		print STDERR "already recursive\n";
 	}else{
@@ -94,5 +97,10 @@ if($iscopy){
 
 push @args, "-i" if $inter;
 
-mkdir_p($last);
+if($minus1){
+	(my $dir = $last) =~ s%/[^/]*$%%;
+	mkdir_p($dir);
+}else{
+	mkdir_p($last);
+}
 ($debug ? \&echo : \&exec)->($cmd, @args, @files, $last) or die "exec(): $!$/";
