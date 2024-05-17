@@ -48,7 +48,6 @@ sub echo
 
 sub exec
 {
-	# Oh you, Perl...
 	exec @_
 }
 
@@ -62,7 +61,7 @@ if($progname eq 'mkcp'){
 	die "Invalid program name \"$progname\", expected \"mkcp\" or \"mkmv\"\n";
 }
 
-usage if(@ARGV < 2 or $ARGV[0] eq '--help');
+usage if @ARGV < 2 or $ARGV[0] eq '--help';
 
 our ($debug, $inter) = (0, 0); # cmd line opts
 
